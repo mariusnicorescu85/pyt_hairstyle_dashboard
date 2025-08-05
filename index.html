@@ -1371,45 +1371,34 @@
       function parsePYTCSVToEmployeeData(csvText) {
         const lines = csvText.split("\n");
         const employees = [];
+        let shopMetrics = null;
 
-        console.log(
-          "🔍 Parsing Google Sheets CSV - PYT employee data:",
-          lines.length,
-          "lines"
-        );
+        // PYT expected employees list (from your name mapper)
+        const PYT_EMPLOYEES = [
+          "Aiyla Akhtar",
+          "Codruta Nicorescu",
+          "Eiman",
+          "Eshaal Awan",
+          "Faiza Zulficar",
+          "Fatima Zulficar",
+          "Hasseb Alina",
+          "Jouman",
+          "Jude Elsidiq",
+          "Karena",
+          "Katelyn Harnett",
+          "Katie",
+          "Lee Adam",
+          "Makeel Rimsha",
+          "Misha",
+          "Temitope",
+          "Tuba Raja",
+          "Zoya Julani",
+        ];
 
-        // Find header row
-        let headerRowIndex = -1;
-        let headers = [];
+        console.log("🔍 PYT CSV lines:", lines.length);
+        console.log("Looking for PYT employee summary rows...");
 
-        for (let i = 0; i < Math.min(5, lines.length); i++) {
-          const columns = lines[i]
-            .split(",")
-            .map((col) => col.replace(/"/g, "").trim());
-          if (
-            columns.includes("Employee") &&
-            columns.includes("FinalTotal") &&
-            columns.includes("Period")
-          ) {
-            headerRowIndex = i;
-            headers = columns;
-            console.log(
-              "✅ Found header row at index",
-              i,
-              ":",
-              headers.slice(0, 5)
-            );
-            break;
-          }
-        }
-
-        if (headerRowIndex === -1) {
-          console.error("❌ Could not find header row in CSV");
-          return [];
-        }
-
-        // Process data rows
-        for (let i = headerRowIndex + 1; i < lines.length; i++) {
+        for (let i = 0; i < lines.length; i++) {
           const line = lines[i].trim();
           if (!line) continue;
 
@@ -1417,84 +1406,109 @@
             .split(",")
             .map((col) => col.replace(/"/g, "").trim());
 
-          // Skip if not enough columns
-          if (columns.length < headers.length - 5) continue;
+          // DEBUG: Log first few rows
+          if (i <= 5) {
+            console.log(
+              `🔍 PYT Row ${i}: "${columns[0]}" | Length: ${
+                columns.length
+              } | Full: [${columns.slice(0, 3).join(", ")}...]`
+            );
+          }
 
-          // Create object from headers and columns
-          const rowData = {};
-          headers.forEach((header, index) => {
-            rowData[header] = columns[index] || "";
-          });
-
-          console.log(
-            `🔍 Processing row ${i}:`,
-            rowData.Employee,
-            "|",
-            rowData.PaymentType
-          );
-
-          // Skip non-employee rows
+          // Skip header rows and empty rows
           if (
-            !rowData.Employee ||
-            rowData.Employee === "Employee" ||
-            rowData.Employee.includes("SHOP_METRICS") ||
-            rowData.Employee.includes("TOTAL_SUMMARY") ||
-            rowData.Employee.includes("BONUS_SUMMARY") ||
-            !PYT_EMPLOYEES.includes(rowData.Employee)
+            i <= 0 ||
+            columns[0] === "employee" ||
+            columns[0] === "" ||
+            columns[0] === "Employee"
           ) {
-            console.log(`⏭️ Skipping row ${i}: "${rowData.Employee}"`);
+            if (i <= 5)
+              console.log(
+                `⏭️ SKIPPED PYT Row ${i}: "${columns[0]}" (header/empty)`
+              );
             continue;
           }
 
-          // Create employee object - this time we DON'T recalculate, we use the N8N values
-          const employee = {
-            name: rowData.Employee,
-            period: rowData.Period || "2025-07",
-            paymentType: rowData.PaymentType || "HOURLY ONLY",
-            workedDays: parseFloat(rowData.WorkedDays) || 0,
-            workedHours: parseFloat(rowData.WorkedHours) || 0,
-            hourlyRate:
-              parseFloat(rowData.HourlyRate?.replace(/[£,"]/g, "")) || 0,
-            salesPercentage: rowData.SalesPercentage || "N/A",
-            basePayment:
-              parseFloat(rowData.BasePayment?.replace(/[£,"]/g, "")) || 0,
-            totalSales:
-              parseFloat(rowData.TotalSales?.replace(/[£,"]/g, "")) || 0,
-            addlSales:
-              parseFloat(rowData.AddlSales?.replace(/[£,"]/g, "")) || 0,
-            adjustedSales:
-              parseFloat(rowData.AdjustedSales?.replace(/[£,"]/g, "")) || 0,
-            salesCommission:
-              parseFloat(rowData.SalesCommission?.replace(/[£,"]/g, "")) || 0,
-            bonusPayment:
-              parseFloat(rowData.BonusPayment?.replace(/[£,"]/g, "")) || 0,
-            finalTotal:
-              parseFloat(rowData.FinalTotal?.replace(/[£,"]/g, "")) || 0,
-            avgSalesPerDay:
-              parseFloat(rowData.AvgSalesPerDay?.replace(/[£,"]/g, "")) || 0,
-            avgSalesPerHour:
-              parseFloat(rowData.AvgSalesPerHour?.replace(/[£,"]/g, "")) || 0,
-            description: rowData.Description || "PYT configuration",
-            configVersion: rowData.ConfigVersion || "2025-v1",
-            dataIssues: rowData.DataIssues || "None",
-            salaryToSalesPct:
-              parseFloat(rowData.SalaryToSalesPct?.replace(/[%,"]/g, "")) || 0,
-            salesShareOfShop:
-              parseFloat(rowData.SalesShareOfShop?.replace(/[%,"]/g, "")) || 0,
-            salaryShareOfShop:
-              parseFloat(rowData.SalaryShareOfShop?.replace(/[%,"]/g, "")) || 0,
-          };
+          // 🔧 FIX: Handle SHOP_METRICS row (like in your working Opatra dashboard)
+          if (columns[0] === "SHOP_METRICS") {
+            console.log(
+              `📊 Found SHOP_METRICS in PYT CSV:`,
+              columns.slice(0, 8)
+            );
+            shopMetrics = {
+              period: columns[1] || "2025-07",
+              totalDays: parseFloat(columns[3]) || 0,
+              totalHours: parseFloat(columns[4]) || 0,
+              totalSales: parseFloat(columns[10]?.replace(/[£,"]/g, "")) || 0, // AdjustedSales column
+              totalSalaries:
+                parseFloat(columns[13]?.replace(/[£,"]/g, "")) || 0, // FinalTotal column
+              shopEfficiency:
+                parseFloat(columns[19]?.replace(/[%,"]/g, "")) || 0, // SalaryToSalesPct column
+              description: columns[16] || "PYTHairstyle shop metrics from CSV",
+            };
+            console.log(`✅ PYT SHOP_METRICS parsed:`, shopMetrics);
+            continue;
+          }
 
-          employees.push(employee);
-          console.log(
-            `✅ Added PYT employee: ${employee.name} - £${employee.finalTotal}`
-          );
+          // Check if this looks like a PYT employee name (using Opatra-style logic)
+          if (
+            columns[0] &&
+            !columns[0].includes("Daily Breakdown") &&
+            !columns[0].includes(" - ") &&
+            !columns[0].includes("#######") &&
+            !columns[0].includes("TOTAL_SUMMARY") &&
+            !columns[0].includes("BONUS_SUMMARY") &&
+            columns[0].length > 0 &&
+            PYT_EMPLOYEES.includes(columns[0])
+          ) {
+            console.log(
+              `Found PYT employee: ${columns[0]} - ${columns.length} columns`
+            );
+
+            if (columns.length >= 8) {
+              const employee = {
+                name: columns[0],
+                period: columns[1] || "2025-07",
+                paymentType: columns[2] || "HOURLY ONLY",
+                workedDays: parseFloat(columns[3]) || 0,
+                workedHours: parseFloat(columns[4]) || 0,
+                hourlyRate: parseFloat(columns[5]?.replace(/[£,"]/g, "")) || 0,
+                salesPercentage: columns[6] || "N/A",
+                basePayment: parseFloat(columns[7]?.replace(/[£,"]/g, "")) || 0,
+                totalSales: parseFloat(columns[8]?.replace(/[£,"]/g, "")) || 0,
+                addlSales: parseFloat(columns[9]?.replace(/[£,"]/g, "")) || 0,
+                adjustedSales:
+                  parseFloat(columns[10]?.replace(/[£,"]/g, "")) || 0,
+                salesCommission:
+                  parseFloat(columns[11]?.replace(/[£,"]/g, "")) || 0,
+                bonusPayment:
+                  parseFloat(columns[12]?.replace(/[£,"]/g, "")) || 0,
+                finalTotal: parseFloat(columns[13]?.replace(/[£,"]/g, "")) || 0,
+                avgSalesPerDay:
+                  parseFloat(columns[14]?.replace(/[£,"]/g, "")) || 0,
+                avgSalesPerHour:
+                  parseFloat(columns[15]?.replace(/[£,"]/g, "")) || 0,
+                description: columns[16] || "PYT standard configuration",
+                configVersion: columns[17] || "2025-v1",
+                dataIssues: columns[18] || "None",
+                salaryToSalesPct:
+                  parseFloat(columns[19]?.replace(/[%,"]/g, "")) || 0,
+                salesShareOfShop:
+                  parseFloat(columns[20]?.replace(/[%,"]/g, "")) || 0,
+                salaryShareOfShop:
+                  parseFloat(columns[21]?.replace(/[%,"]/g, "")) || 0,
+              };
+
+              employees.push(employee);
+              console.log(
+                `✅ ADDED PYT: ${employee.name} - £${employee.finalTotal}`
+              );
+            }
+          }
         }
 
-        console.log(
-          `📊 Parsed ${employees.length} PYT employees from Google Sheets`
-        );
-        return employees;
+        console.log(`📊 PYT SUMMARY: Added ${employees.length} employees`);
+        return { employees, shopMetrics };
       }
 
       // Also update your fetchPYTFromGoogleSheets function to handle the processed data correctly
@@ -1507,68 +1521,125 @@
           "status"
         );
 
-        const csvUrl = `https://docs.google.com/spreadsheets/d/1VlQ9JRTSCdtIyxbh-AffUawdAIEgZw33W_poq1X6R5s/export?format=csv&gid=0`;
+        // Use the same URL approach as your working Opatra dashboard
+        const urlsToTry = [
+          `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(
+            sheetTab
+          )}`,
+          `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&sheet=${encodeURIComponent(
+            sheetTab
+          )}`,
+          `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`, // fallback
+          `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=0`,
+        ];
 
-        try {
-          const response = await fetch(csvUrl, {
-            method: "GET",
-            mode: "cors",
-          });
+        for (let i = 0; i < urlsToTry.length; i++) {
+          const csvUrl = urlsToTry[i];
+          console.log(`Trying PYT URL ${i + 1}:`, csvUrl);
 
-          if (response.ok) {
-            const csvText = await response.text();
-            console.log(
-              "📄 Google Sheets CSV received, length:",
-              csvText.length
-            );
+          try {
+            const response = await fetch(csvUrl, {
+              method: "GET",
+              mode: "cors",
+            });
 
-            const parsedEmployees = parsePYTCSVToEmployeeData(csvText);
+            console.log(`PYT Response ${i + 1} status:`, response.status);
 
-            if (parsedEmployees.length > 0) {
-              // Convert to the format your receiveWorkflowData expects
-              const mockData = parsedEmployees.map((emp) => ({
-                Employee: emp.name,
-                Period: emp.period,
-                PaymentType: emp.paymentType,
-                WorkedDays: emp.workedDays.toString(),
-                WorkedHours: emp.workedHours.toFixed(2),
-                HourlyRate: `£${emp.hourlyRate.toFixed(2)}`,
-                SalesPercentage: emp.salesPercentage,
-                BasePayment: `£${emp.basePayment.toFixed(2)}`,
-                TotalSales: `£${emp.totalSales.toFixed(2)}`,
-                AddlSales: `£${emp.addlSales.toFixed(2)}`,
-                AdjustedSales: `£${emp.adjustedSales.toFixed(2)}`,
-                SalesCommission: `£${emp.salesCommission.toFixed(2)}`,
-                BonusPayment: `£${emp.bonusPayment.toFixed(2)}`,
-                FinalTotal: `£${emp.finalTotal.toFixed(2)}`,
-                AvgSalesPerDay: `£${emp.avgSalesPerDay.toFixed(2)}`,
-                AvgSalesPerHour: `£${emp.avgSalesPerHour.toFixed(2)}`,
-                Description: emp.description,
-                ConfigVersion: emp.configVersion,
-                DataIssues: emp.dataIssues,
-                SalaryToSalesPct: `${emp.salaryToSalesPct.toFixed(2)}%`,
-                SalesShareOfShop: `${emp.salesShareOfShop.toFixed(2)}%`,
-                SalaryShareOfShop: `${emp.salaryShareOfShop.toFixed(2)}%`,
-              }));
-
+            if (response.ok) {
+              const csvText = await response.text();
               console.log(
-                "✅ Converted to dashboard format:",
-                mockData.length,
-                "employees"
+                `PYT Success with URL ${i + 1}! First 500 chars:`,
+                csvText.substring(0, 500)
               );
-              receiveWorkflowData(mockData);
-              return;
-            }
-          }
 
-          throw new Error(`Failed to fetch or parse Google Sheets data`);
-        } catch (error) {
-          console.error("❌ Google Sheets fetch failed:", error);
-          showStatus(
-            `❌ Unable to fetch from Google Sheets: ${error.message}`,
-            "error"
-          );
+              // Check if this looks like our PYT data
+              if (
+                csvText.length > 50 &&
+                (csvText.includes("employee") ||
+                  csvText.includes("Employee") ||
+                  csvText.includes(","))
+              ) {
+                const parsed = parsePYTCSVToEmployeeData(csvText);
+                console.log("Parsed PYT data:", parsed);
+
+                if (parsed.employees.length > 0) {
+                  // Convert to the format your receiveWorkflowData expects
+                  const mockData = parsed.employees.map((emp) => ({
+                    Employee: emp.name,
+                    Period: emp.period,
+                    PaymentType: emp.paymentType,
+                    WorkedDays: emp.workedDays.toString(),
+                    WorkedHours: emp.workedHours.toFixed(2),
+                    HourlyRate: `£${emp.hourlyRate.toFixed(2)}`,
+                    SalesPercentage: emp.salesPercentage,
+                    BasePayment: `£${emp.basePayment.toFixed(2)}`,
+                    TotalSales: `£${emp.totalSales.toFixed(2)}`,
+                    AddlSales: `£${emp.addlSales.toFixed(2)}`,
+                    AdjustedSales: `£${emp.adjustedSales.toFixed(2)}`,
+                    SalesCommission: `£${emp.salesCommission.toFixed(2)}`,
+                    BonusPayment: `£${emp.bonusPayment.toFixed(2)}`,
+                    FinalTotal: `£${emp.finalTotal.toFixed(2)}`,
+                    AvgSalesPerDay: `£${emp.avgSalesPerDay.toFixed(2)}`,
+                    AvgSalesPerHour: `£${emp.avgSalesPerHour.toFixed(2)}`,
+                    Description: emp.description,
+                    ConfigVersion: emp.configVersion,
+                    DataIssues: emp.dataIssues,
+                    SalaryToSalesPct: `${emp.salaryToSalesPct.toFixed(2)}%`,
+                    SalesShareOfShop: `${emp.salesShareOfShop.toFixed(2)}%`,
+                    SalaryShareOfShop: `${emp.salaryShareOfShop.toFixed(2)}%`,
+                  }));
+
+                  // Add SHOP_METRICS if found
+                  if (parsed.shopMetrics) {
+                    mockData.push({
+                      Employee: "SHOP_METRICS",
+                      Period: parsed.shopMetrics.period,
+                      PaymentType: "ALL_TYPES",
+                      WorkedDays: parsed.shopMetrics.totalDays.toString(),
+                      WorkedHours: parsed.shopMetrics.totalHours.toFixed(2),
+                      AdjustedSales: `£${parsed.shopMetrics.totalSales.toFixed(
+                        2
+                      )}`,
+                      FinalTotal: `£${parsed.shopMetrics.totalSalaries.toFixed(
+                        2
+                      )}`,
+                      Description: parsed.shopMetrics.description,
+                      SalaryToSalesPct: `${parsed.shopMetrics.shopEfficiency.toFixed(
+                        2
+                      )}%`,
+                      SalesShareOfShop: "100.00%",
+                      SalaryShareOfShop: "100.00%",
+                    });
+                  }
+
+                  console.log(
+                    "✅ Converted PYT to dashboard format:",
+                    mockData.length,
+                    "items"
+                  );
+                  receiveWorkflowData(mockData);
+                  return;
+                } else {
+                  console.log(
+                    "No valid PYT employee data found, trying next URL..."
+                  );
+                }
+              } else {
+                console.log(
+                  "Response doesn't look like PYT CSV data, trying next URL..."
+                );
+              }
+            }
+          } catch (error) {
+            console.log(`PYT URL ${i + 1} failed:`, error.message);
+          }
         }
+
+        // If all URLs failed
+        showStatus(
+          `Unable to fetch PYTHairstyle data for "${sheetTab}" tab. Please check: 1) Sheet is shared publicly, 2) Tab "${sheetTab}" exists, 3) Tab contains data`,
+          "error"
+        );
       }
       function loadPYTTestData() {
         // Test data based on your PYT N8N workflow structure
