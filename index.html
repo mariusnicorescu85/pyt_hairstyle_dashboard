@@ -1832,6 +1832,99 @@
 
       // Global function for N8N integration
       window.receiveWorkflowData = receiveWorkflowData;
+
+      // Add these functions to your dashboard JavaScript
+
+      // Fetch latest data from N8N workflow
+      async function fetchLatestN8NData() {
+        showStatus(
+          "Fetching latest PYTHairstyle data from N8N workflow...",
+          "status"
+        );
+
+        try {
+          const response = await fetch("/api/receive-pyt-data", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          const result = await response.json();
+
+          if (response.ok && result.success && result.data) {
+            console.log("📥 Fetched N8N data:", result);
+            receiveWorkflowData(result.data);
+            showStatus(
+              `✅ Successfully loaded data from N8N workflow (updated: ${new Date(
+                result.timestamp
+              ).toLocaleString()})`,
+              "success"
+            );
+            return true;
+          } else if (response.status === 404) {
+            showStatus(
+              '⏳ No data from N8N workflow yet. Run your N8N workflow, then click "Refresh from N8N".',
+              "status"
+            );
+          } else {
+            throw new Error(
+              `Server responded with ${response.status}: ${
+                result.message || "Unknown error"
+              }`
+            );
+          }
+        } catch (error) {
+          console.error("❌ Failed to fetch N8N data:", error);
+          showStatus(`❌ Could not fetch N8N data: ${error.message}`, "error");
+        }
+
+        return false;
+      }
+
+      // Manual refresh function
+      function refreshFromN8N() {
+        fetchLatestN8NData();
+      }
+
+      // Auto-fetch on page load
+      window.addEventListener("load", async function () {
+        // First try URL parameters (existing functionality)
+        const urlParams = new URLSearchParams(window.location.search);
+        const dataParam = urlParams.get("data");
+
+        if (dataParam) {
+          try {
+            const data = JSON.parse(decodeURIComponent(dataParam));
+            receiveWorkflowData(data);
+            return;
+          } catch (error) {
+            showStatus("Error parsing URL data: " + error.message, "error");
+          }
+        }
+
+        // Try to fetch from N8N API
+        await fetchLatestN8NData();
+      });
+
+      // Add refresh button to controls
+      document.addEventListener("DOMContentLoaded", function () {
+        const controlsDiv = document.querySelector(".controls");
+        if (controlsDiv) {
+          const refreshBtn = document.createElement("button");
+          refreshBtn.className = "btn";
+          refreshBtn.innerHTML = "🔄 Refresh from N8N";
+          refreshBtn.onclick = refreshFromN8N;
+
+          // Insert after the first button
+          const firstBtn = controlsDiv.querySelector(".btn");
+          if (firstBtn) {
+            firstBtn.insertAdjacentElement("afterend", refreshBtn);
+          } else {
+            controlsDiv.appendChild(refreshBtn);
+          }
+        }
+      });
     </script>
   </body>
 </html>
