@@ -389,12 +389,88 @@ function renderEmployeeReports() {
       paymentTypeDisplay = "💇‍♀️ Hourly Rate Only";
     }
 
-    // PYT Hairstyle Dashboard JavaScript - Part 5: Complete Employee Table HTML
+    // Complete employee HTML section
+    section.innerHTML = `
+      <div class="employee-header">
+        💇‍♀️ ${emp.name} - ${emp.period}
+        <span style="float: right; font-size: 14px;">
+            ${paymentTypeDisplay} | Total: £${emp.finalTotal.toFixed(2)} | 
+            <span style="color: ${
+              (emp.finalTotal / emp.adjustedSales) * 100 < 35
+                ? "#4CAF50"
+                : (emp.finalTotal / emp.adjustedSales) * 100 < 50
+                ? "#FF9800"
+                : "#F44336"
+            };">
+                ${
+                  emp.adjustedSales > 0
+                    ? ((emp.finalTotal / emp.adjustedSales) * 100).toFixed(1)
+                    : "0.0"
+                }%
+            </span>
+        </span>
+      </div>
+      <div class="summary-section">
+          <table class="summary-table">
+              <tr>
+                  <th style="width: 25%;">Metric</th>
+                  <th style="width: 20%;">Value</th>
+                  <th style="width: 55%;">Details</th>
+              </tr>
+              <tr>
+                  <td><strong>💼 Employment Structure</strong></td>
+                  <td colspan="2"></td>
+              </tr>
+              <tr>
+                  <td>Payment Type</td>
+                  <td>${paymentTypeDisplay}</td>
+                  <td>${emp.description}</td>
+              </tr>
+              <tr>
+                  <td>Config Version</td>
+                  <td>${emp.configVersion}</td>
+                  <td>PYT Hairstyle configuration tracking</td>
+              </tr>
+              <tr>
+                  <td>Data Quality</td>
+                  <td>${emp.dataIssues}</td>
+                  <td>Data validation results</td>
+              </tr>
+              <tr>
+                  <td><strong>⏰ Work Summary</strong></td>
+                  <td colspan="2"></td>
+              </tr>
+              <tr>
+                  <td>Worked Days</td>
+                  <td>${emp.workedDays}</td>
+                  <td>Total working days in period</td>
+              </tr>
+              <tr>
+                  <td>Service Hours</td>
+                  <td>${emp.workedHours.toFixed(2)}</td>
+                  <td>Total hours on the salon floor</td>
+              </tr>
+              <tr>
+                  <td>Hourly Rate</td>
+                  <td class="currency">£${emp.hourlyRate.toFixed(2)}</td>
+                  <td>Base hourly payment rate</td>
+              </tr>
+    `;
 
-    // This is the complete HTML for the employee table section that goes inside renderEmployeeReports()
-    // Replace the section.innerHTML in Part 4 with this complete version:
+    container.appendChild(section);
+  });
 
-    const completeEmployeeHTML = `
+  // Add individual summary section
+  if (employeeData.length > 1) {
+    addIndividualSummarySection(container);
+  }
+}
+// PYT Hairstyle Dashboard JavaScript - Part 5: Complete Employee Table HTML
+
+// This is the complete HTML for the employee table section that goes inside renderEmployeeReports()
+// Replace the section.innerHTML in Part 4 with this complete version:
+
+const completeEmployeeHTML = `
       <div class="employee-header">
         💇‍♀️ ${emp.name} - ${emp.period}
         <span style="float: right; font-size: 14px;">
@@ -533,8 +609,8 @@ function renderEmployeeReports() {
                   <td>Average Sales per Day</td>
                   <td class="currency">£${emp.avgSalesPerDay.toFixed(2)}</td>
                   <td>£${emp.adjustedSales.toFixed(2)} ÷ ${
-      emp.workedDays
-    } days</td>
+  emp.workedDays
+} days</td>
               </tr>
               <tr>
                   <td>Average Sales per Hour</td>
@@ -602,17 +678,6 @@ function renderEmployeeReports() {
           </table>
       </div>
     `;
-
-    // Continue with more table rows in the next part...
-
-    container.appendChild(section);
-  });
-
-  // Add individual summary section
-  if (employeeData.length > 1) {
-    addIndividualSummarySection(container);
-  }
-}
 // PYT Hairstyle Dashboard JavaScript - Part 6: Google Sheets and CSV Functions
 
 // PYT-specific functions with correct URL formats
@@ -742,10 +807,6 @@ async function fetchPYTFromGoogleSheets() {
     "error"
   );
 }
-
-// Parse CSV data to PYT employee format
-// FIXED CSV Parser for PYT Data - Replace the existing parsePYTCSVToEmployeeData function
-
 // FIXED CSV Parser for PYT Data - Replace the existing parsePYTCSVToEmployeeData function
 
 function parsePYTCSVToEmployeeData(csvText) {
@@ -1051,273 +1112,6 @@ function debugCSVStructure(csvText) {
       }
     }
   }
-
-  // Calculate shop metrics from employee data if not found or incorrect
-  if (!shopMetrics && employees.length > 0) {
-    const totalSales = employees.reduce(
-      (sum, emp) => sum + emp.adjustedSales,
-      0
-    );
-    const totalSalaries = employees.reduce(
-      (sum, emp) => sum + emp.finalTotal,
-      0
-    );
-    const totalDays = employees.reduce((sum, emp) => sum + emp.workedDays, 0);
-    const totalHours = employees.reduce((sum, emp) => sum + emp.workedHours, 0);
-
-    shopMetrics = {
-      period: employees[0]?.period || "2025-07",
-      totalDays: totalDays,
-      totalHours: totalHours,
-      totalSales: totalSales,
-      totalSalaries: totalSalaries,
-      shopEfficiency: totalSales > 0 ? (totalSalaries / totalSales) * 100 : 0,
-      description: `Calculated from ${employees.length} PYT stylists`,
-    };
-
-    console.log(`🧮 Calculated PYT shop metrics:`, shopMetrics);
-  }
-
-  // Update employee percentages with correct shop totals
-  if (shopMetrics && employees.length > 0) {
-    employees.forEach((emp) => {
-      emp.salesShareOfShop =
-        shopMetrics.totalSales > 0
-          ? (emp.adjustedSales / shopMetrics.totalSales) * 100
-          : 0;
-      emp.salaryShareOfShop =
-        shopMetrics.totalSalaries > 0
-          ? (emp.finalTotal / shopMetrics.totalSalaries) * 100
-          : 0;
-    });
-  }
-
-  console.log(`📊 PYT SUMMARY: Added ${employees.length} employees`);
-  return { employees, shopMetrics };
-}
-// PYT Hairstyle Dashboard JavaScript - Part 7: Comparison and Test Data Functions
-
-async function fetchAndComparePYTSheets() {
-  const sheet1 = document.getElementById("sheetTab").value || "july";
-  const sheet2 = document.getElementById("compareSheet").value;
-
-  if (!sheet2) {
-    alert("Please enter a second sheet name to compare with");
-    return;
-  }
-
-  if (sheet1 === sheet2) {
-    alert("Please enter different sheet names to compare");
-    return;
-  }
-
-  showStatus(
-    `Loading PYT Hairstyle ${sheet1} and ${sheet2} for comparison...`,
-    "status"
-  );
-
-  try {
-    // Load first sheet
-    document.getElementById("sheetTab").value = sheet1;
-    await fetchPYTFromGoogleSheets();
-    const data1 = {
-      employees: JSON.parse(JSON.stringify(employeeData)),
-      shopMetrics: shopMetrics ? JSON.parse(JSON.stringify(shopMetrics)) : null,
-    };
-
-    // Load second sheet
-    document.getElementById("sheetTab").value = sheet2;
-    await fetchPYTFromGoogleSheets();
-    const data2 = {
-      employees: JSON.parse(JSON.stringify(employeeData)),
-      shopMetrics: shopMetrics ? JSON.parse(JSON.stringify(shopMetrics)) : null,
-    };
-
-    // Render comparison
-    renderPYTSheetComparison(data1, data2, sheet1, sheet2);
-
-    // Restore original sheet name
-    document.getElementById("sheetTab").value = sheet1;
-  } catch (error) {
-    showStatus("Error comparing PYT sheets: " + error.message, "error");
-  }
-}
-
-function loadPYTTestData() {
-  // Test data based on your PYT N8N workflow structure
-  const testData = [
-    {
-      Employee: "Employee",
-      Period: "Period",
-      PaymentType: "Payment Type",
-      WorkedDays: "Worked Days",
-      WorkedHours: "Worked Hours",
-      HourlyRate: "Hourly Rate",
-      SalesPercentage: "Sales %",
-      BasePayment: "Base Payment",
-      TotalSales: "Total Sales",
-      AddlSales: "Addl Sales",
-      AdjustedSales: "Adjusted Sales",
-      SalesCommission: "Sales Commission",
-      BonusPayment: "Bonus Payment",
-      FinalTotal: "Final Total Payment",
-      AvgSalesPerDay: "Avg Sales/Day",
-      AvgSalesPerHour: "Avg Sales/Hour",
-      Description: "Pay Structure Description",
-      ConfigVersion: "Config Version",
-      DataIssues: "Data Issues",
-      SalaryToSalesPct: "Salary vs Own Sales %",
-      SalesShareOfShop: "Sales Share of Shop %",
-      SalaryShareOfShop: "Salary Share of Shop %",
-    },
-    {
-      Employee: "Hasseb Alina",
-      Period: "2025-07",
-      PaymentType: "HOURLY ONLY",
-      WorkedDays: "22",
-      WorkedHours: "176.00",
-      HourlyRate: "£12.50",
-      SalesPercentage: "N/A",
-      BasePayment: "£2200.00",
-      TotalSales: "£3450.00",
-      AddlSales: "£125.00",
-      AdjustedSales: "£3575.00",
-      SalesCommission: "£0.00",
-      BonusPayment: "£0.00",
-      FinalTotal: "£2200.00",
-      AvgSalesPerDay: "£162.50",
-      AvgSalesPerHour: "£20.31",
-      Description: "Senior stylist: £12.50/hour, no commission",
-      ConfigVersion: "2025-v1",
-      DataIssues: "None",
-      SalaryToSalesPct: "61.54%",
-      SalesShareOfShop: "18.75%",
-      SalaryShareOfShop: "22.45%",
-    },
-    {
-      Employee: "Makeel Rimsha",
-      Period: "2025-07",
-      PaymentType: "HOURLY ONLY",
-      WorkedDays: "20",
-      WorkedHours: "160.00",
-      HourlyRate: "£12.21",
-      SalesPercentage: "N/A",
-      BasePayment: "£1953.60",
-      TotalSales: "£2850.00",
-      AddlSales: "£75.00",
-      AdjustedSales: "£2925.00",
-      SalesCommission: "£0.00",
-      BonusPayment: "£0.00",
-      FinalTotal: "£1953.60",
-      AvgSalesPerDay: "£146.25",
-      AvgSalesPerHour: "£18.28",
-      Description: "Senior stylist: £12.21/hour, no commission",
-      ConfigVersion: "2025-v1",
-      DataIssues: "None",
-      SalaryToSalesPct: "66.82%",
-      SalesShareOfShop: "15.33%",
-      SalaryShareOfShop: "19.92%",
-    },
-    {
-      Employee: "Fatima Zulficar",
-      Period: "2025-07",
-      PaymentType: "HOURLY ONLY",
-      WorkedDays: "18",
-      WorkedHours: "144.00",
-      HourlyRate: "£10.00",
-      SalesPercentage: "N/A",
-      BasePayment: "£1440.00",
-      TotalSales: "£2200.00",
-      AddlSales: "£50.00",
-      AdjustedSales: "£2250.00",
-      SalesCommission: "£0.00",
-      BonusPayment: "£0.00",
-      FinalTotal: "£1440.00",
-      AvgSalesPerDay: "£125.00",
-      AvgSalesPerHour: "£15.63",
-      Description: "Stylist: £10/hour, no commission",
-      ConfigVersion: "2025-v1",
-      DataIssues: "None",
-      SalaryToSalesPct: "64.00%",
-      SalesShareOfShop: "11.79%",
-      SalaryShareOfShop: "14.69%",
-    },
-    {
-      Employee: "Eshaal Awan",
-      Period: "2025-07",
-      PaymentType: "HOURLY ONLY",
-      WorkedDays: "15",
-      WorkedHours: "120.00",
-      HourlyRate: "£7.55",
-      SalesPercentage: "N/A",
-      BasePayment: "£906.00",
-      TotalSales: "£1650.00",
-      AddlSales: "£25.00",
-      AdjustedSales: "£1675.00",
-      SalesCommission: "£0.00",
-      BonusPayment: "£0.00",
-      FinalTotal: "£906.00",
-      AvgSalesPerDay: "£111.67",
-      AvgSalesPerHour: "£13.96",
-      Description: "Junior stylist: £7.55/hour, no commission",
-      ConfigVersion: "2025-v1",
-      DataIssues: "None",
-      SalaryToSalesPct: "54.09%",
-      SalesShareOfShop: "8.78%",
-      SalaryShareOfShop: "9.24%",
-    },
-    {
-      Employee: "Temitope",
-      Period: "2025-07",
-      PaymentType: "HOURLY ONLY",
-      WorkedDays: "25",
-      WorkedHours: "200.00",
-      HourlyRate: "£12.21",
-      SalesPercentage: "N/A",
-      BasePayment: "£2442.00",
-      TotalSales: "£4125.00",
-      AddlSales: "£200.00",
-      AdjustedSales: "£4325.00",
-      SalesCommission: "£0.00",
-      BonusPayment: "£0.00",
-      FinalTotal: "£2442.00",
-      AvgSalesPerDay: "£173.00",
-      AvgSalesPerHour: "£21.63",
-      Description: "Senior stylist: £12.21/hour, no commission",
-      ConfigVersion: "2025-v1",
-      DataIssues: "None",
-      SalaryToSalesPct: "56.46%",
-      SalesShareOfShop: "22.67%",
-      SalaryShareOfShop: "24.91%",
-    },
-    {
-      Employee: "SHOP_METRICS",
-      Period: "2025-07",
-      PaymentType: "ALL_TYPES",
-      WorkedDays: "100",
-      WorkedHours: "800.00",
-      HourlyRate: "",
-      SalesPercentage: "",
-      BasePayment: "",
-      TotalSales: "",
-      AddlSales: "",
-      AdjustedSales: "£19075.00",
-      SalesCommission: "",
-      BonusPayment: "",
-      FinalTotal: "£9801.60",
-      AvgSalesPerDay: "",
-      AvgSalesPerHour: "",
-      Description:
-        "PYT Hairstyle salon efficiency: 51.39% salary cost of total sales",
-      ConfigVersion: "2025-v1",
-      DataIssues: "None",
-      SalaryToSalesPct: "51.39%",
-      SalesShareOfShop: "100.00%",
-      SalaryShareOfShop: "100.00%",
-    },
-  ];
-
-  receiveWorkflowData(testData);
 }
 // PYT Hairstyle Dashboard JavaScript - Part 8: Final Functions and Event Listeners
 
@@ -1488,100 +1282,104 @@ function exportToExcel() {
   XLSX.writeFile(wb, filename);
 }
 
-// Multi-month comparison functions
-function initializeMonthlyTabs() {
-  const tabs = document.querySelectorAll(".month-tab");
-  const comparisonControls = document.getElementById("comparisonControls");
+function loadPYTTestData() {
+  // Test data based on your PYT N8N workflow structure
+  const testData = [
+    {
+      Employee: "Employee",
+      Period: "Period",
+      PaymentType: "Payment Type",
+      WorkedDays: "Worked Days",
+      WorkedHours: "Worked Hours",
+      HourlyRate: "Hourly Rate",
+      SalesPercentage: "Sales %",
+      BasePayment: "Base Payment",
+      TotalSales: "Total Sales",
+      AddlSales: "Addl Sales",
+      AdjustedSales: "Adjusted Sales",
+      SalesCommission: "Sales Commission",
+      BonusPayment: "Bonus Payment",
+      FinalTotal: "Final Total Payment",
+      AvgSalesPerDay: "Avg Sales/Day",
+      AvgSalesPerHour: "Avg Sales/Hour",
+      Description: "Pay Structure Description",
+      ConfigVersion: "Config Version",
+      DataIssues: "Data Issues",
+      SalaryToSalesPct: "Salary vs Own Sales %",
+      SalesShareOfShop: "Sales Share of Shop %",
+      SalaryShareOfShop: "Salary Share of Shop %",
+    },
+    {
+      Employee: "Hasseb Alina",
+      Period: "2025-07",
+      PaymentType: "HOURLY ONLY",
+      WorkedDays: "22",
+      WorkedHours: "176.00",
+      HourlyRate: "£12.50",
+      SalesPercentage: "N/A",
+      BasePayment: "£2200.00",
+      TotalSales: "£3450.00",
+      AddlSales: "£125.00",
+      AdjustedSales: "£3575.00",
+      SalesCommission: "£0.00",
+      BonusPayment: "£0.00",
+      FinalTotal: "£2200.00",
+      AvgSalesPerDay: "£162.50",
+      AvgSalesPerHour: "£20.31",
+      Description: "Senior stylist: £12.50/hour, no commission",
+      ConfigVersion: "2025-v1",
+      DataIssues: "None",
+      SalaryToSalesPct: "61.54%",
+      SalesShareOfShop: "18.75%",
+      SalaryShareOfShop: "22.45%",
+    },
+    {
+      Employee: "Makeel Rimsha",
+      Period: "2025-07",
+      PaymentType: "HOURLY ONLY",
+      WorkedDays: "20",
+      WorkedHours: "160.00",
+      HourlyRate: "£12.21",
+      SalesPercentage: "N/A",
+      BasePayment: "£1953.60",
+      TotalSales: "£2850.00",
+      AddlSales: "£75.00",
+      AdjustedSales: "£2925.00",
+      SalesCommission: "£0.00",
+      BonusPayment: "£0.00",
+      FinalTotal: "£1953.60",
+      AvgSalesPerDay: "£146.25",
+      AvgSalesPerHour: "£18.28",
+      Description: "Senior stylist: £12.21/hour, no commission",
+      ConfigVersion: "2025-v1",
+      DataIssues: "None",
+      SalaryToSalesPct: "66.82%",
+      SalesShareOfShop: "15.33%",
+      SalaryShareOfShop: "19.92%",
+    },
+    {
+      Employee: "SHOP_METRICS",
+      Period: "2025-07",
+      PaymentType: "ALL_TYPES",
+      WorkedDays: "100",
+      WorkedHours: "800.00",
+      AdjustedSales: "£19075.00",
+      FinalTotal: "£9801.60",
+      Description:
+        "PYT Hairstyle salon efficiency: 51.39% salary cost of total sales",
+      ConfigVersion: "2025-v1",
+      DataIssues: "None",
+      SalaryToSalesPct: "51.39%",
+      SalesShareOfShop: "100.00%",
+      SalaryShareOfShop: "100.00%",
+    },
+  ];
 
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", function () {
-      tabs.forEach((t) => t.classList.remove("active"));
-      this.classList.add("active");
-
-      if (this.dataset.mode === "comparison") {
-        comparisonControls.style.display = "block";
-      } else {
-        comparisonControls.style.display = "none";
-        if (employeeData.length > 0) {
-          renderEmployeeReports();
-        }
-      }
-    });
-  });
-}
-
-function loadMonthlyComparison() {
-  alert(
-    "Multi-month comparison feature coming soon! For now, use the 'Compare Two Months' button above."
-  );
-}
-
-function loadHistoricalData() {
-  alert(
-    "Historical data loading feature coming soon! For now, load individual months using the sheet tab field."
-  );
-}
-
-function exportComparisonToExcel() {
-  alert(
-    "Multi-month Excel export coming soon! For now, use the regular 'Export to Excel' button."
-  );
-}
-
-// Fetch latest data from N8N workflow
-async function fetchLatestN8NData() {
-  showStatus(
-    "Fetching latest PYT Hairstyle data from N8N workflow...",
-    "status"
-  );
-
-  try {
-    const response = await fetch("/api/receive-pyt-data", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    const result = await response.json();
-
-    if (response.ok && result.success && result.data) {
-      console.log("📥 Fetched N8N data:", result);
-      receiveWorkflowData(result.data);
-      showStatus(
-        `✅ Successfully loaded data from N8N workflow (updated: ${new Date(
-          result.timestamp
-        ).toLocaleString()})`,
-        "success"
-      );
-      return true;
-    } else if (response.status === 404) {
-      showStatus(
-        '⏳ No data from N8N workflow yet. Run your N8N workflow, then click "Refresh from N8N".',
-        "status"
-      );
-    } else {
-      throw new Error(
-        `Server responded with ${response.status}: ${
-          result.message || "Unknown error"
-        }`
-      );
-    }
-  } catch (error) {
-    console.error("❌ Failed to fetch N8N data:", error);
-    showStatus(`❌ Could not fetch N8N data: ${error.message}`, "error");
-  }
-
-  return false;
-}
-
-// Manual refresh function
-function refreshFromN8N() {
-  fetchLatestN8NData();
+  receiveWorkflowData(testData);
 }
 
 // Check for URL parameters (for simple integration)
-window.addEventListener("load", async function () {
+window.addEventListener("load", function () {
   const urlParams = new URLSearchParams(window.location.search);
   const dataParam = urlParams.get("data");
 
@@ -1589,19 +1387,10 @@ window.addEventListener("load", async function () {
     try {
       const data = JSON.parse(decodeURIComponent(dataParam));
       receiveWorkflowData(data);
-      return;
     } catch (error) {
       showStatus("Error parsing URL data: " + error.message, "error");
     }
   }
-
-  // Try to fetch from N8N API
-  await fetchLatestN8NData();
-});
-
-// Initialize when page loads
-document.addEventListener("DOMContentLoaded", function () {
-  initializeMonthlyTabs();
 });
 
 // For webhook integration (if hosting with backend)
@@ -1611,233 +1400,3 @@ if (typeof window.receivePYTWebhookData === "undefined") {
 
 // Global function for N8N integration
 window.receiveWorkflowData = receiveWorkflowData;
-// PYT Hairstyle Dashboard JavaScript - Comparison Rendering Function
-// Add this function to your script.js file
-
-// PYT Hairstyle Dashboard JavaScript - Complete Comparison Rendering Function
-
-function renderPYTSheetComparison(data1, data2, sheet1, sheet2) {
-  const container = document.getElementById("employeeReports");
-
-  let html = `
-    <div class="comparison-view" style="background: linear-gradient(135deg, #f8f9ff, #fff0f5); padding: 20px; border-radius: 12px; margin: 20px 0;">
-        <h2>💇‍♀️ PYT Hairstyle Comparison: ${sheet1.toUpperCase()} vs ${sheet2.toUpperCase()}</h2>
-        
-        <div class="comparison-section">
-            <div class="comparison-header" style="background: linear-gradient(135deg, #764ba2, #667eea);">🏪 Salon Performance Comparison</div>
-            <div style="padding: 15px;">
-                <table class="comparison-table" style="width: 100%; border-collapse: collapse;">
-                    <tr>
-                        <th style="background: #764ba2; color: white; padding: 12px; border: 1px solid #ddd;">Salon Metric</th>
-                        <th style="background: #764ba2; color: white; padding: 12px; border: 1px solid #ddd;">${sheet1.toUpperCase()}</th>
-                        <th style="background: #764ba2; color: white; padding: 12px; border: 1px solid #ddd;">${sheet2.toUpperCase()}</th>
-                        <th style="background: #764ba2; color: white; padding: 12px; border: 1px solid #ddd;">Difference</th>
-                        <th style="background: #764ba2; color: white; padding: 12px; border: 1px solid #ddd;">Change %</th>
-                    </tr>
-  `;
-
-  // Shop metrics comparison
-  if (data1.shopMetrics && data2.shopMetrics) {
-    const metrics = [
-      {
-        key: "totalSales",
-        label: "Total Salon Sales",
-        format: (v) => `£${v.toLocaleString()}`,
-      },
-      {
-        key: "totalSalaries",
-        label: "Total Payroll",
-        format: (v) => `£${v.toLocaleString()}`,
-      },
-      {
-        key: "shopEfficiency",
-        label: "Salon Efficiency",
-        format: (v) => `${v.toFixed(2)}%`,
-      },
-    ];
-
-    metrics.forEach((metric) => {
-      const val1 = data1.shopMetrics[metric.key] || 0;
-      const val2 = data2.shopMetrics[metric.key] || 0;
-      const diff = val1 - val2;
-      const changePercent = val2 !== 0 ? (diff / val2) * 100 : 0;
-
-      html += `
-        <tr style="border: 1px solid #ddd;">
-          <td style="padding: 10px; border: 1px solid #ddd;"><strong>${
-            metric.label
-          }</strong></td>
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${metric.format(
-            val1
-          )}</td>
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${metric.format(
-            val2
-          )}</td>
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${
-            diff > 0 ? "+" : ""
-          }${metric.format(Math.abs(diff))}</td>
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: ${
-            changePercent > 0 ? "#4CAF50" : "#F44336"
-          };">${changePercent > 0 ? "+" : ""}${changePercent.toFixed(1)}%</td>
-        </tr>
-      `;
-    });
-  }
-
-  html += `
-                </table>
-            </div>
-        </div>
-        
-        <h3 style="color: #764ba2;">💇‍♀️ Stylist Performance Comparison</h3>
-  `;
-
-  // Get all unique employees
-  const allEmployees = new Set();
-  data1.employees?.forEach((emp) => allEmployees.add(emp.name));
-  data2.employees?.forEach((emp) => allEmployees.add(emp.name));
-
-  // Employee comparisons
-  Array.from(allEmployees)
-    .sort()
-    .forEach((employeeName) => {
-      const emp1 = data1.employees?.find((e) => e.name === employeeName);
-      const emp2 = data2.employees?.find((e) => e.name === employeeName);
-
-      html += `
-        <div class="comparison-section" style="margin: 20px 0; border: 1px solid #764ba2; border-radius: 8px; overflow: hidden;">
-            <div class="comparison-header" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px;">
-                💇‍♀️ ${employeeName} - Performance Comparison
-            </div>
-            <div style="padding: 15px;">
-                <table class="comparison-table" style="width: 100%; border-collapse: collapse;">
-                    <tr>
-                        <th style="background: #f8f9ff; color: #764ba2; padding: 10px; border: 1px solid #ddd;">Metric</th>
-                        <th style="background: #f8f9ff; color: #764ba2; padding: 10px; border: 1px solid #ddd;">${sheet1.toUpperCase()}</th>
-                        <th style="background: #f8f9ff; color: #764ba2; padding: 10px; border: 1px solid #ddd;">${sheet2.toUpperCase()}</th>
-                        <th style="background: #f8f9ff; color: #764ba2; padding: 10px; border: 1px solid #ddd;">Difference</th>
-                        <th style="background: #f8f9ff; color: #764ba2; padding: 10px; border: 1px solid #ddd;">Change %</th>
-                    </tr>
-      `;
-
-      const comparisonMetrics = [
-        {
-          key: "adjustedSales",
-          label: "Total Sales",
-          format: (v) => `£${v.toLocaleString()}`,
-        },
-        {
-          key: "finalTotal",
-          label: "Total Pay",
-          format: (v) => `£${v.toLocaleString()}`,
-        },
-        {
-          key: "workedHours",
-          label: "Hours Worked",
-          format: (v) => v.toFixed(1),
-        },
-        {
-          key: "avgSalesPerDay",
-          label: "Avg Sales/Day",
-          format: (v) => `£${v.toFixed(0)}`,
-        },
-      ];
-
-      comparisonMetrics.forEach((metric) => {
-        const val1 = emp1?.[metric.key];
-        const val2 = emp2?.[metric.key];
-
-        if (val1 !== undefined && val2 !== undefined) {
-          const diff = val1 - val2;
-          const changePercent = val2 !== 0 ? (diff / val2) * 100 : 0;
-
-          html += `
-            <tr style="border: 1px solid #ddd;">
-              <td style="padding: 8px; border: 1px solid #ddd;">${
-                metric.label
-              }</td>
-              <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${metric.format(
-                val1
-              )}</td>
-              <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${metric.format(
-                val2
-              )}</td>
-              <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${
-                diff > 0 ? "+" : ""
-              }${metric.format(Math.abs(diff))}</td>
-              <td style="padding: 8px; border: 1px solid #ddd; text-align: right; color: ${
-                changePercent > 0 ? "#4CAF50" : "#F44336"
-              };">${changePercent > 0 ? "+" : ""}${changePercent.toFixed(
-            1
-          )}%</td>
-            </tr>
-          `;
-        } else {
-          html += `
-            <tr style="border: 1px solid #ddd;">
-              <td style="padding: 8px; border: 1px solid #ddd;">${
-                metric.label
-              }</td>
-              <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${
-                val1 ? metric.format(val1) : "N/A"
-              }</td>
-              <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${
-                val2 ? metric.format(val2) : "N/A"
-              }</td>
-              <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">N/A</td>
-              <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">N/A</td>
-            </tr>
-          `;
-        }
-      });
-
-      html += `
-                </table>
-            </div>
-        </div>
-      `;
-    });
-
-  html += "</div>";
-  container.innerHTML = html;
-  showStatus(
-    `PYT Hairstyle comparison completed: ${sheet1} vs ${sheet2}`,
-    "success"
-  );
-}
-function debugCSVStructure(csvText) {
-  const lines = csvText.split("\n");
-  console.log("🔍 DEBUG: Analyzing CSV structure...");
-
-  for (let i = 0; i < Math.min(5, lines.length); i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    const columns = line.split(",").map((col) => col.replace(/"/g, "").trim());
-    console.log(`Row ${i}: [${columns.length} columns]`);
-
-    // Show first 10 columns with their indices
-    for (let j = 0; j < Math.min(10, columns.length); j++) {
-      console.log(`  [${j}]: "${columns[j]}"`);
-    }
-
-    if (i === 0) {
-      console.log("📋 This should be your header row");
-    }
-    console.log("---");
-  }
-
-  // Look for SHOP_METRICS row specifically
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    const columns = line.split(",").map((col) => col.replace(/"/g, "").trim());
-
-    if (columns[0] === "SHOP_METRICS") {
-      console.log(`🎯 SHOP_METRICS found at row ${i}:`);
-      for (let j = 0; j < columns.length; j++) {
-        console.log(`  [${j}]: "${columns[j]}"`);
-      }
-      break;
-    }
-  }
-}
