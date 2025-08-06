@@ -361,7 +361,7 @@ function addIndividualSummarySection(container) {
   `;
   container.appendChild(summarySection);
 }
-// PYT Hairstyle Dashboard JavaScript - Part 4: Main Rendering Function (Part 1)
+// PYT Hairstyle Dashboard JavaScript - Part 4 FIXED: Complete Rendering Function
 
 // Render employee reports with PYT styling
 function renderEmployeeReports() {
@@ -389,88 +389,8 @@ function renderEmployeeReports() {
       paymentTypeDisplay = "💇‍♀️ Hourly Rate Only";
     }
 
-    // Complete employee HTML section
+    // COMPLETE EMPLOYEE HTML - FIXED
     section.innerHTML = `
-      <div class="employee-header">
-        💇‍♀️ ${emp.name} - ${emp.period}
-        <span style="float: right; font-size: 14px;">
-            ${paymentTypeDisplay} | Total: £${emp.finalTotal.toFixed(2)} | 
-            <span style="color: ${
-              (emp.finalTotal / emp.adjustedSales) * 100 < 35
-                ? "#4CAF50"
-                : (emp.finalTotal / emp.adjustedSales) * 100 < 50
-                ? "#FF9800"
-                : "#F44336"
-            };">
-                ${
-                  emp.adjustedSales > 0
-                    ? ((emp.finalTotal / emp.adjustedSales) * 100).toFixed(1)
-                    : "0.0"
-                }%
-            </span>
-        </span>
-      </div>
-      <div class="summary-section">
-          <table class="summary-table">
-              <tr>
-                  <th style="width: 25%;">Metric</th>
-                  <th style="width: 20%;">Value</th>
-                  <th style="width: 55%;">Details</th>
-              </tr>
-              <tr>
-                  <td><strong>💼 Employment Structure</strong></td>
-                  <td colspan="2"></td>
-              </tr>
-              <tr>
-                  <td>Payment Type</td>
-                  <td>${paymentTypeDisplay}</td>
-                  <td>${emp.description}</td>
-              </tr>
-              <tr>
-                  <td>Config Version</td>
-                  <td>${emp.configVersion}</td>
-                  <td>PYT Hairstyle configuration tracking</td>
-              </tr>
-              <tr>
-                  <td>Data Quality</td>
-                  <td>${emp.dataIssues}</td>
-                  <td>Data validation results</td>
-              </tr>
-              <tr>
-                  <td><strong>⏰ Work Summary</strong></td>
-                  <td colspan="2"></td>
-              </tr>
-              <tr>
-                  <td>Worked Days</td>
-                  <td>${emp.workedDays}</td>
-                  <td>Total working days in period</td>
-              </tr>
-              <tr>
-                  <td>Service Hours</td>
-                  <td>${emp.workedHours.toFixed(2)}</td>
-                  <td>Total hours on the salon floor</td>
-              </tr>
-              <tr>
-                  <td>Hourly Rate</td>
-                  <td class="currency">£${emp.hourlyRate.toFixed(2)}</td>
-                  <td>Base hourly payment rate</td>
-              </tr>
-    `;
-
-    container.appendChild(section);
-  });
-
-  // Add individual summary section
-  if (employeeData.length > 1) {
-    addIndividualSummarySection(container);
-  }
-}
-// PYT Hairstyle Dashboard JavaScript - Part 5: Complete Employee Table HTML
-
-// This is the complete HTML for the employee table section that goes inside renderEmployeeReports()
-// Replace the section.innerHTML in Part 4 with this complete version:
-
-const completeEmployeeHTML = `
       <div class="employee-header">
         💇‍♀️ ${emp.name} - ${emp.period}
         <span style="float: right; font-size: 14px;">
@@ -609,8 +529,8 @@ const completeEmployeeHTML = `
                   <td>Average Sales per Day</td>
                   <td class="currency">£${emp.avgSalesPerDay.toFixed(2)}</td>
                   <td>£${emp.adjustedSales.toFixed(2)} ÷ ${
-  emp.workedDays
-} days</td>
+      emp.workedDays
+    } days</td>
               </tr>
               <tr>
                   <td>Average Sales per Hour</td>
@@ -678,6 +598,15 @@ const completeEmployeeHTML = `
           </table>
       </div>
     `;
+
+    container.appendChild(section);
+  });
+
+  // Add individual summary section
+  if (employeeData.length > 1) {
+    addIndividualSummarySection(container);
+  }
+}
 // PYT Hairstyle Dashboard JavaScript - Part 6: Google Sheets and CSV Functions
 
 // PYT-specific functions with correct URL formats
