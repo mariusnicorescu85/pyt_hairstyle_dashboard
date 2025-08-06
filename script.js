@@ -47,7 +47,6 @@ function receiveWorkflowData(data) {
     console.error("Raw data:", data);
   }
 }
-
 // Helper functions
 function getEfficiencyRating(salaryToSales, salesShare) {
   // Hair salon specific efficiency ranges
@@ -73,6 +72,107 @@ function showStatus(message, type = "status") {
   statusElement.className = type;
 }
 
+// Parse CSV data to PYT employee format - FIXED VERSION MATCHING YOUR WORKING DASHBOARD
+function parsePYTCSVToEmployeeData(csvText) {
+  const lines = csvText.split("\n");
+  const employees = [];
+  let shopMetrics = null;
+
+  console.log("🔍 PYT CSV lines:", lines.length);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const columns = line.split(",").map((col) => col.replace(/"/g, "").trim());
+
+    // Skip header rows and empty rows
+    if (
+      i <= 0 ||
+      columns[0] === "employee" ||
+      columns[0] === "" ||
+      columns[0] === "Employee"
+    ) {
+      continue;
+    }
+
+    // Handle SHOP_METRICS row - FIXED COLUMN MAPPING
+    if (columns[0] === "SHOP_METRICS") {
+      console.log(
+        `📊 Found SHOP_METRICS with ${columns.length} columns:`,
+        columns
+      );
+
+      shopMetrics = {
+        period: columns[1] || "2025-07",
+        totalDays: parseFloat(columns[3]) || 0,
+        totalHours: parseFloat(columns[4]) || 0,
+        totalSales: parseFloat(columns[10]?.replace(/[£,"]/g, "")) || 0, // AdjustedSales column K
+        totalSalaries: parseFloat(columns[13]?.replace(/[£,"]/g, "")) || 0, // FinalTotal column N
+        shopEfficiency: 0,
+        description: columns[16] || "PYT Hairstyle shop metrics from CSV",
+      };
+
+      if (shopMetrics.totalSales > 0) {
+        shopMetrics.shopEfficiency =
+          (shopMetrics.totalSalaries / shopMetrics.totalSales) * 100;
+      }
+
+      console.log(`✅ PYT SHOP_METRICS parsed:`, shopMetrics);
+      continue;
+    }
+
+    // Handle Employee rows - EXACT SAME LOGIC AS WORKING DASHBOARD
+    if (
+      columns[0] &&
+      !columns[0].includes("Daily Breakdown") &&
+      !columns[0].includes(" - ") &&
+      !columns[0].includes("TOTAL_SUMMARY") &&
+      !columns[0].includes("BONUS_SUMMARY") &&
+      PYT_EMPLOYEES.includes(columns[0])
+    ) {
+      console.log(
+        `Found PYT employee: ${columns[0]} - ${columns.length} columns`
+      );
+
+      if (columns.length >= 15) {
+        const employee = {
+          name: columns[0],
+          period: columns[1] || "2025-07",
+          paymentType: columns[2] || "HOURLY ONLY",
+          workedDays: parseFloat(columns[3]) || 0,
+          workedHours: parseFloat(columns[4]) || 0,
+          hourlyRate: parseFloat(columns[5]?.replace(/[£,"]/g, "")) || 0,
+          salesPercentage: columns[6] || "N/A",
+          basePayment: parseFloat(columns[7]?.replace(/[£,"]/g, "")) || 0,
+          totalSales: parseFloat(columns[8]?.replace(/[£,"]/g, "")) || 0,
+          addlSales: parseFloat(columns[9]?.replace(/[£,"]/g, "")) || 0,
+          adjustedSales: parseFloat(columns[10]?.replace(/[£,"]/g, "")) || 0,
+          salesCommission: parseFloat(columns[11]?.replace(/[£,"]/g, "")) || 0,
+          bonusPayment: parseFloat(columns[12]?.replace(/[£,"]/g, "")) || 0,
+          finalTotal: parseFloat(columns[13]?.replace(/[£,"]/g, "")) || 0,
+          avgSalesPerDay: parseFloat(columns[14]?.replace(/[£,"]/g, "")) || 0,
+          avgSalesPerHour: parseFloat(columns[15]?.replace(/[£,"]/g, "")) || 0,
+          description: columns[16] || "PYT standard configuration",
+          configVersion: columns[17] || "2025-v1",
+          dataIssues: columns[18] || "None",
+          salaryToSalesPct: parseFloat(columns[19]?.replace(/[%,"]/g, "")) || 0,
+          salesShareOfShop: parseFloat(columns[20]?.replace(/[%,"]/g, "")) || 0,
+          salaryShareOfShop:
+            parseFloat(columns[21]?.replace(/[%,"]/g, "")) || 0,
+        };
+
+        employees.push(employee);
+        console.log(
+          `✅ ADDED PYT: ${employee.name} - £${employee.finalTotal} (Sales: £${employee.totalSales})`
+        );
+      }
+    }
+  }
+
+  console.log(`📊 PYT SUMMARY: Added ${employees.length} employees`);
+  return { employees, shopMetrics };
+}
 // Parse data from your PYT N8N workflow format
 function parseN8NData(rawData) {
   console.log("Starting to parse PYT data:", rawData);
@@ -220,7 +320,6 @@ function parseN8NData(rawData) {
   console.log("Final PYT shop metrics:", shopMetrics);
   return { employees, shopMetrics };
 }
-
 // Add shop summary section
 function addShopSummarySection(container) {
   const summarySection = document.createElement("div");
@@ -296,6 +395,70 @@ function addShopSummarySection(container) {
   container.appendChild(summarySection);
 }
 
+function addIndividualSummarySection(container) {
+  const totalPayment = employeeData.reduce(
+    (sum, emp) => sum + emp.finalTotal,
+    0
+  );
+  const totalSales = employeeData.reduce(
+    (sum, emp) => sum + emp.adjustedSales,
+    0
+  );
+  const totalCommission = employeeData.reduce(
+    (sum, emp) => sum + emp.salesCommission,
+    0
+  );
+  const totalHours = employeeData.reduce(
+    (sum, emp) => sum + emp.workedHours,
+    0
+  );
+
+  const summarySection = document.createElement("div");
+  summarySection.className = "employee-section";
+  summarySection.innerHTML = `
+    <div class="employee-header">
+        📊 PYT Hairstyle Stylist Summary - ${employeeData.length} Team Members
+    </div>
+    <div class="summary-section">
+        <table class="summary-table">
+            <tr>
+                <th>Metric</th>
+                <th>Total</th>
+                <th>Average per Stylist</th>
+            </tr>
+            <tr>
+                <td>Total Service Hours</td>
+                <td>${totalHours.toFixed(2)}</td>
+                <td>${(totalHours / employeeData.length).toFixed(2)}</td>
+            </tr>
+            <tr>
+                <td>Total Sales</td>
+                <td class="currency">£${totalSales.toFixed(2)}</td>
+                <td class="currency">£${(
+                  totalSales / employeeData.length
+                ).toFixed(2)}</td>
+            </tr>
+            <tr>
+                <td>Total Commission</td>
+                <td class="currency">£${totalCommission.toFixed(2)}</td>
+                <td class="currency">£${(
+                  totalCommission / employeeData.length
+                ).toFixed(2)}</td>
+            </tr>
+            <tr class="totals-row">
+                <td><strong>Total Payments</strong></td>
+                <td class="currency"><strong>£${totalPayment.toFixed(
+                  2
+                )}</strong></td>
+                <td class="currency"><strong>£${(
+                  totalPayment / employeeData.length
+                ).toFixed(2)}</strong></td>
+            </tr>
+        </table>
+    </div>
+  `;
+  container.appendChild(summarySection);
+}
 // Render employee reports with PYT styling
 function renderEmployeeReports() {
   const container = document.getElementById("employeeReports");
@@ -404,6 +567,8 @@ function renderEmployeeReports() {
                   }</td>
                   <td>Commission on services (if applicable)</td>
               </tr>
+          
+
               <tr>
                   <td>Service Sales</td>
                   <td class="currency">£${emp.totalSales.toFixed(2)}</td>
@@ -541,72 +706,6 @@ function renderEmployeeReports() {
     addIndividualSummarySection(container);
   }
 }
-
-function addIndividualSummarySection(container) {
-  const totalPayment = employeeData.reduce(
-    (sum, emp) => sum + emp.finalTotal,
-    0
-  );
-  const totalSales = employeeData.reduce(
-    (sum, emp) => sum + emp.adjustedSales,
-    0
-  );
-  const totalCommission = employeeData.reduce(
-    (sum, emp) => sum + emp.salesCommission,
-    0
-  );
-  const totalHours = employeeData.reduce(
-    (sum, emp) => sum + emp.workedHours,
-    0
-  );
-
-  const summarySection = document.createElement("div");
-  summarySection.className = "employee-section";
-  summarySection.innerHTML = `
-    <div class="employee-header">
-        📊 PYT Hairstyle Stylist Summary - ${employeeData.length} Team Members
-    </div>
-    <div class="summary-section">
-        <table class="summary-table">
-            <tr>
-                <th>Metric</th>
-                <th>Total</th>
-                <th>Average per Stylist</th>
-            </tr>
-            <tr>
-                <td>Total Service Hours</td>
-                <td>${totalHours.toFixed(2)}</td>
-                <td>${(totalHours / employeeData.length).toFixed(2)}</td>
-            </tr>
-            <tr>
-                <td>Total Sales</td>
-                <td class="currency">£${totalSales.toFixed(2)}</td>
-                <td class="currency">£${(
-                  totalSales / employeeData.length
-                ).toFixed(2)}</td>
-            </tr>
-            <tr>
-                <td>Total Commission</td>
-                <td class="currency">£${totalCommission.toFixed(2)}</td>
-                <td class="currency">£${(
-                  totalCommission / employeeData.length
-                ).toFixed(2)}</td>
-            </tr>
-            <tr class="totals-row">
-                <td><strong>Total Payments</strong></td>
-                <td class="currency"><strong>£${totalPayment.toFixed(
-                  2
-                )}</strong></td>
-                <td class="currency"><strong>£${(
-                  totalPayment / employeeData.length
-                ).toFixed(2)}</strong></td>
-            </tr>
-        </table>
-    </div>
-  `;
-  container.appendChild(summarySection);
-}
-
 // PYT-specific functions with correct URL formats
 async function fetchPYTFromGoogleSheets() {
   const sheetTab = document.getElementById("sheetTab").value || "july";
@@ -727,141 +826,6 @@ async function fetchPYTFromGoogleSheets() {
   );
 }
 
-// Parse CSV data to PYT employee format - SIMPLIFIED VERSION MATCHING YOUR WORKING DASHBOARD
-function parsePYTCSVToEmployeeData(csvText) {
-  const lines = csvText.split("\n");
-  const employees = [];
-  let shopMetrics = null;
-
-  console.log("🔍 PYT CSV lines:", lines.length);
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    const columns = line.split(",").map((col) => col.replace(/"/g, "").trim());
-
-    // DEBUG: Log first few rows to see structure
-    if (i <= 5) {
-      console.log(
-        `🔍 Row ${i}: "${columns[0]}" | Length: ${
-          columns.length
-        } | Full: [${columns.slice(0, 3).join(", ")}...]`
-      );
-    }
-
-    // Skip header rows and empty rows
-    if (
-      i <= 0 ||
-      columns[0] === "employee" ||
-      columns[0] === "" ||
-      columns[0] === "Employee"
-    ) {
-      continue;
-    }
-
-    // Handle SHOP_METRICS row
-    if (columns[0] === "SHOP_METRICS") {
-      console.log(
-        `📊 Found SHOP_METRICS with ${columns.length} columns:`,
-        columns
-      );
-
-      shopMetrics = {
-        period: columns[1] || "2025-07",
-        totalDays: parseFloat(columns[3]) || 0,
-        totalHours: parseFloat(columns[4]) || 0,
-        totalSales: parseFloat(columns[10]?.replace(/[£,"]/g, "")) || 0,
-        totalSalaries: parseFloat(columns[13]?.replace(/[£,"]/g, "")) || 0,
-        shopEfficiency: 0,
-        description: columns[16] || "PYT Hairstyle shop metrics from CSV",
-      };
-
-      if (shopMetrics.totalSales > 0) {
-        shopMetrics.shopEfficiency =
-          (shopMetrics.totalSalaries / shopMetrics.totalSales) * 100;
-      }
-
-      console.log(`✅ PYT SHOP_METRICS parsed:`, shopMetrics);
-      continue;
-    }
-
-    // Handle Employee rows - using the same logic as your working dashboard
-    if (
-      columns[0] &&
-      !columns[0].includes("Daily Breakdown") &&
-      !columns[0].includes(" - ") &&
-      !columns[0].includes("TOTAL_SUMMARY") &&
-      !columns[0].includes("BONUS_SUMMARY") &&
-      PYT_EMPLOYEES.includes(columns[0])
-    ) {
-      console.log(
-        `Found PYT employee: ${columns[0]} - ${columns.length} columns`
-      );
-
-      if (columns.length >= 15) {
-        const employee = {
-          name: columns[0],
-          period: columns[1] || "2025-07",
-          paymentType: columns[2] || "HOURLY ONLY",
-          workedDays: parseFloat(columns[3]) || 0,
-          workedHours: parseFloat(columns[4]) || 0,
-          hourlyRate: parseFloat(columns[5]?.replace(/[£,"]/g, "")) || 0,
-          salesPercentage: columns[6] || "N/A",
-          basePayment: parseFloat(columns[7]?.replace(/[£,"]/g, "")) || 0,
-          totalSales: parseFloat(columns[8]?.replace(/[£,"]/g, "")) || 0,
-          addlSales: parseFloat(columns[9]?.replace(/[£,"]/g, "")) || 0,
-          adjustedSales: parseFloat(columns[10]?.replace(/[£,"]/g, "")) || 0,
-          salesCommission: parseFloat(columns[11]?.replace(/[£,"]/g, "")) || 0,
-          bonusPayment: parseFloat(columns[12]?.replace(/[£,"]/g, "")) || 0,
-          finalTotal: parseFloat(columns[13]?.replace(/[£,"]/g, "")) || 0,
-          avgSalesPerDay: parseFloat(columns[14]?.replace(/[£,"]/g, "")) || 0,
-          avgSalesPerHour: parseFloat(columns[15]?.replace(/[£,"]/g, "")) || 0,
-          description: columns[16] || "PYT standard configuration",
-          configVersion: columns[17] || "2025-v1",
-          dataIssues: columns[18] || "None",
-          salaryToSalesPct: parseFloat(columns[19]?.replace(/[%,"]/g, "")) || 0,
-          salesShareOfShop: parseFloat(columns[20]?.replace(/[%,"]/g, "")) || 0,
-          salaryShareOfShop:
-            parseFloat(columns[21]?.replace(/[%,"]/g, "")) || 0,
-        };
-
-        employees.push(employee);
-        console.log(`✅ ADDED PYT: ${employee.name} - £${employee.finalTotal}`);
-      }
-    }
-  }
-
-  // Calculate shop metrics from employee data if not found
-  if (!shopMetrics && employees.length > 0) {
-    const totalSales = employees.reduce(
-      (sum, emp) => sum + emp.adjustedSales,
-      0
-    );
-    const totalSalaries = employees.reduce(
-      (sum, emp) => sum + emp.finalTotal,
-      0
-    );
-    const totalDays = employees.reduce((sum, emp) => sum + emp.workedDays, 0);
-    const totalHours = employees.reduce((sum, emp) => sum + emp.workedHours, 0);
-
-    shopMetrics = {
-      period: employees[0]?.period || "2025-07",
-      totalDays: totalDays,
-      totalHours: totalHours,
-      totalSales: totalSales,
-      totalSalaries: totalSalaries,
-      shopEfficiency: totalSales > 0 ? (totalSalaries / totalSales) * 100 : 0,
-      description: `Calculated from ${employees.length} PYT stylists`,
-    };
-
-    console.log(`🧮 Calculated PYT shop metrics:`, shopMetrics);
-  }
-
-  console.log(`📊 PYT SUMMARY: Added ${employees.length} employees`);
-  return { employees, shopMetrics };
-}
-
 // Compare two sheets function
 async function fetchAndComparePYTSheets() {
   const sheet1 = document.getElementById("sheetTab").value || "july";
@@ -910,7 +874,6 @@ async function fetchAndComparePYTSheets() {
     showStatus("Error comparing PYT sheets: " + error.message, "error");
   }
 }
-
 function loadPYTTestData() {
   // Test data based on your PYT N8N workflow structure
   const testData = [
