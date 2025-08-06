@@ -123,6 +123,7 @@ function parsePYTCSVToEmployeeData(csvText) {
     }
 
     // Handle Employee rows - EXACT SAME LOGIC AS WORKING DASHBOARD
+    // Handle Employee rows - DEBUG VERSION TO SEE ACTUAL COLUMN STRUCTURE
     if (
       columns[0] &&
       !columns[0].includes("Daily Breakdown") &&
@@ -134,6 +135,12 @@ function parsePYTCSVToEmployeeData(csvText) {
       console.log(
         `Found PYT employee: ${columns[0]} - ${columns.length} columns`
       );
+
+      // DEBUG: Print ALL columns to see the exact structure
+      console.log("🔍 FULL COLUMN DEBUG for", columns[0]);
+      for (let j = 0; j < columns.length; j++) {
+        console.log(`  Column [${j}]: "${columns[j]}"`);
+      }
 
       if (columns.length >= 15) {
         const employee = {
