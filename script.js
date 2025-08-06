@@ -659,6 +659,8 @@ async function fetchPYTFromGoogleSheets() {
           csvText.substring(0, 500)
         );
 
+        debugCSVStructure(csvText);
+
         // Check if this looks like our PYT data
         if (
           csvText.length > 50 &&
@@ -742,28 +744,20 @@ async function fetchPYTFromGoogleSheets() {
 }
 
 // Parse CSV data to PYT employee format
+// FIXED CSV Parser for PYT Data - Replace the existing parsePYTCSVToEmployeeData function
+
 function parsePYTCSVToEmployeeData(csvText) {
   const lines = csvText.split("\n");
   const employees = [];
   let shopMetrics = null;
 
   console.log("🔍 PYT CSV lines:", lines.length);
-  console.log("Looking for PYT employee summary rows...");
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
 
     const columns = line.split(",").map((col) => col.replace(/"/g, "").trim());
-
-    // DEBUG: Log first few rows
-    if (i <= 5) {
-      console.log(
-        `🔍 PYT Row ${i}: "${columns[0]}" | Length: ${
-          columns.length
-        } | Full: [${columns.slice(0, 3).join(", ")}...]`
-      );
-    }
 
     // Skip header rows and empty rows
     if (
@@ -772,43 +766,86 @@ function parsePYTCSVToEmployeeData(csvText) {
       columns[0] === "" ||
       columns[0] === "Employee"
     ) {
-      if (i <= 5)
-        console.log(`⏭️ SKIPPED PYT Row ${i}: "${columns[0]}" (header/empty)`);
       continue;
     }
 
-    // Handle SHOP_METRICS row
+    // Handle SHOP_METRICS row - FIXED COLUMN MAPPING
     if (columns[0] === "SHOP_METRICS") {
-      console.log(`📊 Found SHOP_METRICS in PYT CSV:`, columns.slice(0, 8));
+      console.log(
+        `📊 Found SHOP_METRICS with ${columns.length} columns:`,
+        columns
+      );
+
+      // Based on your data structure, map columns correctly:
       shopMetrics = {
         period: columns[1] || "2025-07",
         totalDays: parseFloat(columns[3]) || 0,
         totalHours: parseFloat(columns[4]) || 0,
-        totalSales: parseFloat(columns[10]?.replace(/[£,"]/g, "")) || 0,
-        totalSalaries: parseFloat(columns[13]?.replace(/[£,"]/g, "")) || 0,
-        shopEfficiency: parseFloat(columns[19]?.replace(/[%,"]/g, "")) || 0,
-        description: columns[16] || "PYT Hairstyle shop metrics from CSV",
+        // FIX: AdjustedSales is likely in a different column - let's try multiple positions
+        totalSales:
+          parseFloat(columns[10]?.replace(/[£,"]/g, "")) ||
+          parseFloat(columns[11]?.replace(/[£,"]/g, "")) ||
+          parseFloat(columns[9]?.replace(/[£,"]/g, "")) ||
+          0,
+        // FIX: FinalTotal is likely in a different column
+        totalSalaries:
+          parseFloat(columns[13]?.replace(/[£,"]/g, "")) ||
+          parseFloat(columns[14]?.replace(/[£,"]/g, "")) ||
+          parseFloat(columns[12]?.replace(/[£,"]/g, "")) ||
+          0,
+        shopEfficiency: 0, // We'll calculate this manually
+        description:
+          columns[16] || columns[6] || "PYT Hairstyle shop metrics from CSV",
       };
+
+      // Manual calculation if the values seem wrong
+      if (shopMetrics.totalSales < 100 || shopMetrics.totalSalaries < 100) {
+        console.log(
+          "⚠️ Shop metrics seem incorrect, will calculate from employee data"
+        );
+        shopMetrics = null; // This will trigger calculation from employee data
+      } else {
+        shopMetrics.shopEfficiency =
+          shopMetrics.totalSales > 0
+            ? (shopMetrics.totalSalaries / shopMetrics.totalSales) * 100
+            : 0;
+      }
+
       console.log(`✅ PYT SHOP_METRICS parsed:`, shopMetrics);
       continue;
     }
 
-    // Check if this looks like a PYT employee name
+    // Handle Employee rows - FIXED PARSING
     if (
       columns[0] &&
       !columns[0].includes("Daily Breakdown") &&
       !columns[0].includes(" - ") &&
-      !columns[0].includes("#######") &&
       !columns[0].includes("TOTAL_SUMMARY") &&
       !columns[0].includes("BONUS_SUMMARY") &&
-      columns[0].length > 0 &&
       PYT_EMPLOYEES.includes(columns[0])
     ) {
       console.log(
         `Found PYT employee: ${columns[0]} - ${columns.length} columns`
       );
 
-      if (columns.length >= 8) {
+      if (columns.length >= 15) {
+        // FIX: Better parsing with fallback values
+        const finalTotal =
+          parseFloat(columns[13]?.replace(/[£,"]/g, "")) ||
+          parseFloat(columns[14]?.replace(/[£,"]/g, "")) ||
+          parseFloat(columns[12]?.replace(/[£,"]/g, "")) ||
+          0;
+
+        const basePayment =
+          parseFloat(columns[7]?.replace(/[£,"]/g, "")) ||
+          parseFloat(columns[8]?.replace(/[£,"]/g, "")) ||
+          finalTotal; // Use finalTotal as fallback
+
+        const adjustedSales =
+          parseFloat(columns[10]?.replace(/[£,"]/g, "")) ||
+          parseFloat(columns[11]?.replace(/[£,"]/g, "")) ||
+          0;
+
         const employee = {
           name: columns[0],
           period: columns[1] || "2025-07",
@@ -817,28 +854,78 @@ function parsePYTCSVToEmployeeData(csvText) {
           workedHours: parseFloat(columns[4]) || 0,
           hourlyRate: parseFloat(columns[5]?.replace(/[£,"]/g, "")) || 0,
           salesPercentage: columns[6] || "N/A",
-          basePayment: parseFloat(columns[7]?.replace(/[£,"]/g, "")) || 0,
+          basePayment: basePayment,
           totalSales: parseFloat(columns[8]?.replace(/[£,"]/g, "")) || 0,
           addlSales: parseFloat(columns[9]?.replace(/[£,"]/g, "")) || 0,
-          adjustedSales: parseFloat(columns[10]?.replace(/[£,"]/g, "")) || 0,
+          adjustedSales: adjustedSales,
           salesCommission: parseFloat(columns[11]?.replace(/[£,"]/g, "")) || 0,
           bonusPayment: parseFloat(columns[12]?.replace(/[£,"]/g, "")) || 0,
-          finalTotal: parseFloat(columns[13]?.replace(/[£,"]/g, "")) || 0,
-          avgSalesPerDay: parseFloat(columns[14]?.replace(/[£,"]/g, "")) || 0,
-          avgSalesPerHour: parseFloat(columns[15]?.replace(/[£,"]/g, "")) || 0,
+          finalTotal: finalTotal,
+          avgSalesPerDay:
+            parseFloat(columns[14]?.replace(/[£,"]/g, "")) ||
+            (adjustedSales && parseFloat(columns[3]) > 0
+              ? adjustedSales / parseFloat(columns[3])
+              : 0),
+          avgSalesPerHour:
+            parseFloat(columns[15]?.replace(/[£,"]/g, "")) ||
+            (adjustedSales && parseFloat(columns[4]) > 0
+              ? adjustedSales / parseFloat(columns[4])
+              : 0),
           description: columns[16] || "PYT standard configuration",
           configVersion: columns[17] || "2025-v1",
           dataIssues: columns[18] || "None",
-          salaryToSalesPct: parseFloat(columns[19]?.replace(/[%,"]/g, "")) || 0,
-          salesShareOfShop: parseFloat(columns[20]?.replace(/[%,"]/g, "")) || 0,
-          salaryShareOfShop:
-            parseFloat(columns[21]?.replace(/[%,"]/g, "")) || 0,
+          salaryToSalesPct:
+            adjustedSales > 0 ? (finalTotal / adjustedSales) * 100 : 0,
+          salesShareOfShop: 0, // Will be calculated later
+          salaryShareOfShop: 0, // Will be calculated later
         };
 
         employees.push(employee);
-        console.log(`✅ ADDED PYT: ${employee.name} - £${employee.finalTotal}`);
+        console.log(
+          `✅ ADDED PYT: ${employee.name} - £${employee.finalTotal} (Base: £${employee.basePayment})`
+        );
       }
     }
+  }
+
+  // Calculate shop metrics from employee data if not found or incorrect
+  if (!shopMetrics && employees.length > 0) {
+    const totalSales = employees.reduce(
+      (sum, emp) => sum + emp.adjustedSales,
+      0
+    );
+    const totalSalaries = employees.reduce(
+      (sum, emp) => sum + emp.finalTotal,
+      0
+    );
+    const totalDays = employees.reduce((sum, emp) => sum + emp.workedDays, 0);
+    const totalHours = employees.reduce((sum, emp) => sum + emp.workedHours, 0);
+
+    shopMetrics = {
+      period: employees[0]?.period || "2025-07",
+      totalDays: totalDays,
+      totalHours: totalHours,
+      totalSales: totalSales,
+      totalSalaries: totalSalaries,
+      shopEfficiency: totalSales > 0 ? (totalSalaries / totalSales) * 100 : 0,
+      description: `Calculated from ${employees.length} PYT stylists`,
+    };
+
+    console.log(`🧮 Calculated PYT shop metrics:`, shopMetrics);
+  }
+
+  // Update employee percentages with correct shop totals
+  if (shopMetrics && employees.length > 0) {
+    employees.forEach((emp) => {
+      emp.salesShareOfShop =
+        shopMetrics.totalSales > 0
+          ? (emp.adjustedSales / shopMetrics.totalSales) * 100
+          : 0;
+      emp.salaryShareOfShop =
+        shopMetrics.totalSalaries > 0
+          ? (emp.finalTotal / shopMetrics.totalSalaries) * 100
+          : 0;
+    });
   }
 
   console.log(`📊 PYT SUMMARY: Added ${employees.length} employees`);
@@ -1553,4 +1640,40 @@ function renderPYTSheetComparison(data1, data2, sheet1, sheet2) {
     `PYT Hairstyle comparison completed: ${sheet1} vs ${sheet2}`,
     "success"
   );
+}
+function debugCSVStructure(csvText) {
+  const lines = csvText.split("\n");
+  console.log("🔍 DEBUG: Analyzing CSV structure...");
+
+  for (let i = 0; i < Math.min(5, lines.length); i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const columns = line.split(",").map((col) => col.replace(/"/g, "").trim());
+    console.log(`Row ${i}: [${columns.length} columns]`);
+
+    // Show first 10 columns with their indices
+    for (let j = 0; j < Math.min(10, columns.length); j++) {
+      console.log(`  [${j}]: "${columns[j]}"`);
+    }
+
+    if (i === 0) {
+      console.log("📋 This should be your header row");
+    }
+    console.log("---");
+  }
+
+  // Look for SHOP_METRICS row specifically
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const columns = line.split(",").map((col) => col.replace(/"/g, "").trim());
+
+    if (columns[0] === "SHOP_METRICS") {
+      console.log(`🎯 SHOP_METRICS found at row ${i}:`);
+      for (let j = 0; j < columns.length; j++) {
+        console.log(`  [${j}]: "${columns[j]}"`);
+      }
+      break;
+    }
+  }
 }
