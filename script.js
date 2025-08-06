@@ -612,68 +612,59 @@ function renderEmployeeReports() {
 // PYT-specific functions with correct URL formats
 // IMMEDIATE FIX: Replace your fetchPYTFromGoogleSheets function with this version
 
+// SIMPLE FIX: Replace your fetchPYTFromGoogleSheets function with this version
+// This removes the problematic headers that cause CORS issues
+
 async function fetchPYTFromGoogleSheets() {
   const sheetTab = document.getElementById("sheetTab").value || "july";
   const sheetId = "1VlQ9JRTSCdtIyxbh-AffUawdAIEgZw33W_poq1X6R5s"; // PYT Sheet ID
 
   showStatus(`Fetching PYT Hairstyle data from ${sheetTab} tab...`, "status");
 
-  // FORCE CACHE BUSTING with timestamp
+  // Cache busting with timestamp only (no problematic headers)
   const timestamp = new Date().getTime();
 
   // Try multiple URL formats with cache busting
   const urlsToTry = [
-    // Try with specific sheet name and cache bust
-    `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(
-      sheetTab
-    )}&_=${timestamp}`,
-    `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&sheet=${encodeURIComponent(
-      sheetTab
-    )}&_=${timestamp}`,
-    // Try default sheet (GID 0) with cache bust
+    // Cache bust URLs
     `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0&_=${timestamp}`,
     `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=0&_=${timestamp}`,
+    // Standard URLs (fallback)
+    `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`,
+    `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=0`,
   ];
 
   for (let i = 0; i < urlsToTry.length; i++) {
     const csvUrl = urlsToTry[i];
-    console.log(`🔄 Trying PYT URL ${i + 1} (cache bust):`, csvUrl);
+    console.log(`🔄 Trying PYT URL ${i + 1}:`, csvUrl);
 
     try {
       const response = await fetch(csvUrl, {
         method: "GET",
         mode: "cors",
-        cache: "no-cache", // FORCE NO CACHE
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
+        // NO CACHE HEADERS - they cause CORS issues
       });
 
       console.log(`🌐 PYT Response ${i + 1} status:`, response.status);
 
       if (response.ok) {
         const csvText = await response.text();
-        console.log(
-          `📄 PYT Success with URL ${i + 1}! CSV length:`,
-          csvText.length
-        );
-        console.log(`📋 First 1000 chars:`, csvText.substring(0, 1000));
+        console.log(`📄 Success! CSV length:`, csvText.length);
 
-        // Check if this contains the NEW correct data
-        const hasCorrectData =
-          csvText.includes("61193.84") ||
-          csvText.includes("22.29%") ||
-          csvText.includes("14942.98");
+        // Quick check for correct data
+        const hasNewData =
+          csvText.includes("61193") ||
+          csvText.includes("14942") ||
+          csvText.includes("22.29");
+        const hasOldData =
+          csvText.includes("4207.37") || csvText.includes("129.74");
 
-        if (hasCorrectData) {
-          console.log("✅ FOUND CORRECT NEW DATA in CSV!");
-        } else {
-          console.log("❌ This still contains OLD DATA - trying next URL...");
-          console.log(
-            "🔍 Looking for: £61,193.84 total sales or 22.29% efficiency"
-          );
+        console.log(`📊 Data Check:`);
+        console.log(`   Contains NEW data (£61,193 sales): ${hasNewData}`);
+        console.log(`   Contains OLD data (£4,207 sales): ${hasOldData}`);
+
+        if (hasOldData && !hasNewData) {
+          console.log(`⚠️ This URL still has cached old data, trying next...`);
           continue;
         }
 
@@ -688,28 +679,36 @@ async function fetchPYTFromGoogleSheets() {
           console.log("📊 Parsed PYT employee data:", parsedData);
 
           if (parsedData.employees.length > 0) {
-            // MANUAL CHECK: Verify we have the correct data
+            // Verify the data quality
             const totalSales = parsedData.employees.reduce(
               (sum, emp) => sum + emp.adjustedSales,
               0
             );
-            const shopEfficiency =
-              parsedData.shopMetrics?.shopEfficiency ||
-              (parsedData.employees.reduce(
-                (sum, emp) => sum + emp.finalTotal,
-                0
-              ) /
-                totalSales) *
-                100;
+            const totalSalaries = parsedData.employees.reduce(
+              (sum, emp) => sum + emp.finalTotal,
+              0
+            );
+            const shopEfficiency = (totalSalaries / totalSales) * 100;
 
-            console.log(`🎯 DATA VERIFICATION:`);
-            console.log(`   Total Sales: £${totalSales.toFixed(2)}`);
-            console.log(`   Shop Efficiency: ${shopEfficiency.toFixed(2)}%`);
+            console.log(`🎯 FINAL VERIFICATION:`);
+            console.log(
+              `   Total Sales: £${totalSales.toFixed(2)} (should be ~£61,193)`
+            );
+            console.log(
+              `   Total Payroll: £${totalSalaries.toFixed(
+                2
+              )} (should be ~£14,943)`
+            );
+            console.log(
+              `   Shop Efficiency: ${shopEfficiency.toFixed(
+                2
+              )}% (should be ~22%)`
+            );
 
-            if (totalSales > 50000 && shopEfficiency < 30) {
-              console.log("✅ VERIFIED: This is the CORRECT NEW data!");
-            } else {
-              console.log("❌ WARNING: This might still be old data!");
+            if (totalSales > 50000) {
+              console.log("✅ SUCCESS: Got the NEW correct data!");
+            } else if (totalSales < 10000) {
+              console.log("❌ WARNING: This looks like OLD incorrect data");
             }
 
             const mockData = parsedData.employees.map((emp) => ({
@@ -737,7 +736,7 @@ async function fetchPYTFromGoogleSheets() {
               SalaryShareOfShop: `${emp.salaryShareOfShop.toFixed(2)}%`,
             }));
 
-            // Add SHOP_METRICS if found
+            // Add SHOP_METRICS
             if (parsedData.shopMetrics) {
               mockData.push({
                 Employee: "SHOP_METRICS",
@@ -760,28 +759,21 @@ async function fetchPYTFromGoogleSheets() {
               });
             }
 
-            console.log(
-              `🎉 LOADING DATA WITH ${
-                totalSales > 50000 ? "CORRECT" : "POTENTIALLY OLD"
-              } VALUES`
-            );
             receiveWorkflowData(mockData);
             return;
-          } else {
-            console.log(
-              "⚠️ No valid PYT employee data found, trying next URL..."
-            );
           }
-        } else {
-          console.log(
-            "⚠️ Response doesn't look like CSV data, trying next URL..."
-          );
         }
       }
     } catch (error) {
       console.log(`❌ PYT URL ${i + 1} failed:`, error.message);
     }
   }
+
+  // All URLs failed - provide helpful message
+  showStatus(
+    `Google Sheets CSV is still cached with old data. Solutions: 1) Click "Load Test Data" for immediate results, 2) Wait 10-15 minutes and try again, 3) Try opening the sheet in a new browser tab to refresh the cache`,
+    "error"
+  );
 
   // If all URLs failed, suggest manual solutions
   showStatus(
