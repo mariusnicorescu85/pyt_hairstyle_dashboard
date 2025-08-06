@@ -124,6 +124,7 @@ function parsePYTCSVToEmployeeData(csvText) {
 
     // Handle Employee rows - EXACT SAME LOGIC AS WORKING DASHBOARD
     // Handle Employee rows - DEBUG VERSION TO SEE ACTUAL COLUMN STRUCTURE
+    // Handle Employee rows - FIXED BASED ON ACTUAL CSV STRUCTURE
     if (
       columns[0] &&
       !columns[0].includes("Daily Breakdown") &&
@@ -136,12 +137,6 @@ function parsePYTCSVToEmployeeData(csvText) {
         `Found PYT employee: ${columns[0]} - ${columns.length} columns`
       );
 
-      // DEBUG: Print ALL columns to see the exact structure
-      console.log("🔍 FULL COLUMN DEBUG for", columns[0]);
-      for (let j = 0; j < columns.length; j++) {
-        console.log(`  Column [${j}]: "${columns[j]}"`);
-      }
-
       if (columns.length >= 15) {
         const employee = {
           name: columns[0],
@@ -152,21 +147,21 @@ function parsePYTCSVToEmployeeData(csvText) {
           hourlyRate: parseFloat(columns[5]?.replace(/[£,"]/g, "")) || 0,
           salesPercentage: columns[6] || "N/A",
           basePayment: parseFloat(columns[7]?.replace(/[£,"]/g, "")) || 0,
-          totalSales: parseFloat(columns[8]?.replace(/[£,"]/g, "")) || 0,
+          totalSales: parseFloat(columns[8]) || 0, // No £ symbol in CSV
           addlSales: parseFloat(columns[9]?.replace(/[£,"]/g, "")) || 0,
-          adjustedSales: parseFloat(columns[10]?.replace(/[£,"]/g, "")) || 0,
+          adjustedSales: parseFloat(columns[10]) || 0, // No £ symbol in CSV
           salesCommission: parseFloat(columns[11]?.replace(/[£,"]/g, "")) || 0,
           bonusPayment: parseFloat(columns[12]?.replace(/[£,"]/g, "")) || 0,
-          finalTotal: parseFloat(columns[13]?.replace(/[£,"]/g, "")) || 0,
+          finalTotal: parseFloat(columns[13]) || 0, // No £ symbol in CSV
           avgSalesPerDay: parseFloat(columns[14]?.replace(/[£,"]/g, "")) || 0,
           avgSalesPerHour: parseFloat(columns[15]?.replace(/[£,"]/g, "")) || 0,
-          description: columns[16] || "PYT standard configuration",
-          configVersion: columns[17] || "2025-v1",
-          dataIssues: columns[18] || "None",
-          salaryToSalesPct: parseFloat(columns[19]?.replace(/[%,"]/g, "")) || 0,
-          salesShareOfShop: parseFloat(columns[20]?.replace(/[%,"]/g, "")) || 0,
+          description: `${columns[20] || "PYT"} | ${columns[21] || "standard"}`, // Combined description
+          configVersion: columns[22] || "2025-v1",
+          dataIssues: columns[23] || "None",
+          salaryToSalesPct: parseFloat(columns[24]?.replace(/[%,"]/g, "")) || 0,
+          salesShareOfShop: parseFloat(columns[25]?.replace(/[%,"]/g, "")) || 0,
           salaryShareOfShop:
-            parseFloat(columns[21]?.replace(/[%,"]/g, "")) || 0,
+            parseFloat(columns[26]?.replace(/[%,"]/g, "")) || 0,
         };
 
         employees.push(employee);
