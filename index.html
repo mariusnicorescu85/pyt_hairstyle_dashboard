@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PYT Hairstyle Employee Payment Report - N8N Integration</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="pyt-styles.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   </head>
   <body>
@@ -97,70 +97,6 @@
         </p>
       </div>
 
-      <!-- Multi-Month Comparison Section -->
-      <div class="test-data-section">
-        <h3>📈 Multi-Month Performance Comparison</h3>
-
-        <div class="month-tabs" id="monthTabs">
-          <div class="month-tab active" data-mode="single">
-            Current Month View
-          </div>
-          <div class="month-tab" data-mode="comparison">Compare Months</div>
-        </div>
-
-        <div
-          id="comparisonControls"
-          class="comparison-controls"
-          style="display: none"
-        >
-          <h4>Select months to compare:</h4>
-          <div
-            style="
-              display: flex;
-              align-items: center;
-              gap: 10px;
-              flex-wrap: wrap;
-            "
-          >
-            <select id="month1Select" style="padding: 8px; border-radius: 4px">
-              <option value="2025-07" selected>July 2025</option>
-              <option value="2025-06">June 2025</option>
-              <option value="2025-05">May 2025</option>
-              <option value="2025-04">April 2025</option>
-              <option value="2025-03">March 2025</option>
-              <option value="2025-02">February 2025</option>
-            </select>
-            <span style="font-weight: bold">vs</span>
-            <select id="month2Select" style="padding: 8px; border-radius: 4px">
-              <option value="2025-06" selected>June 2025</option>
-              <option value="2025-05">May 2025</option>
-              <option value="2025-04">April 2025</option>
-              <option value="2025-03">March 2025</option>
-              <option value="2025-02">February 2025</option>
-              <option value="2025-01">January 2025</option>
-            </select>
-            <button class="btn btn-secondary" onclick="loadMonthlyComparison()">
-              📊 Compare Performance
-            </button>
-          </div>
-          <p>
-            <small
-              >💡 Tip: Data will be loaded from Google Sheets tabs named by
-              month (e.g., "june", "may")</small
-            >
-          </p>
-        </div>
-
-        <div class="controls">
-          <button class="btn" onclick="loadHistoricalData()">
-            📚 Load Historical Data
-          </button>
-          <button class="btn btn-secondary" onclick="exportComparisonToExcel()">
-            📊 Export Multi-Month Report
-          </button>
-        </div>
-      </div>
-
       <div id="status" class="status">
         Ready to load PYT Hairstyle employee data...
       </div>
@@ -168,6 +104,6 @@
       <div id="employeeReports"></div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="pyt-script.js"></script>
   </body>
 </html>

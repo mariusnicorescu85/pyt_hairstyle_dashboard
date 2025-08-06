@@ -1,4 +1,4 @@
-// PYT Hairstyle Dashboard JavaScript - Part 1: Variables and Basic Functions
+// PYT Hairstyle Dashboard JavaScript - Simplified Version
 
 let employeeData = [];
 let shopMetrics = null;
@@ -48,7 +48,7 @@ function receiveWorkflowData(data) {
   }
 }
 
-// Helper function to determine efficiency rating for hair salon
+// Helper functions
 function getEfficiencyRating(salaryToSales, salesShare) {
   // Hair salon specific efficiency ranges
   if (salesShare > 12 && salaryToSales < 30) return "⭐⭐⭐ Excellent Stylist";
@@ -72,7 +72,6 @@ function showStatus(message, type = "status") {
   statusElement.textContent = message;
   statusElement.className = type;
 }
-// PYT Hairstyle Dashboard JavaScript - Part 2: Data Parsing Functions
 
 // Parse data from your PYT N8N workflow format
 function parseN8NData(rawData) {
@@ -221,8 +220,8 @@ function parseN8NData(rawData) {
   console.log("Final PYT shop metrics:", shopMetrics);
   return { employees, shopMetrics };
 }
-// PYT Hairstyle Dashboard JavaScript - Part 3: Shop Summary and Individual Employee Rendering
 
+// Add shop summary section
 function addShopSummarySection(container) {
   const summarySection = document.createElement("div");
   summarySection.className = "employee-section shop-summary";
@@ -297,72 +296,6 @@ function addShopSummarySection(container) {
   container.appendChild(summarySection);
 }
 
-function addIndividualSummarySection(container) {
-  const totalPayment = employeeData.reduce(
-    (sum, emp) => sum + emp.finalTotal,
-    0
-  );
-  const totalSales = employeeData.reduce(
-    (sum, emp) => sum + emp.adjustedSales,
-    0
-  );
-  const totalCommission = employeeData.reduce(
-    (sum, emp) => sum + emp.salesCommission,
-    0
-  );
-  const totalHours = employeeData.reduce(
-    (sum, emp) => sum + emp.workedHours,
-    0
-  );
-
-  const summarySection = document.createElement("div");
-  summarySection.className = "employee-section";
-  summarySection.innerHTML = `
-    <div class="employee-header">
-        📊 PYT Hairstyle Stylist Summary - ${employeeData.length} Team Members
-    </div>
-    <div class="summary-section">
-        <table class="summary-table">
-            <tr>
-                <th>Metric</th>
-                <th>Total</th>
-                <th>Average per Stylist</th>
-            </tr>
-            <tr>
-                <td>Total Service Hours</td>
-                <td>${totalHours.toFixed(2)}</td>
-                <td>${(totalHours / employeeData.length).toFixed(2)}</td>
-            </tr>
-            <tr>
-                <td>Total Sales</td>
-                <td class="currency">£${totalSales.toFixed(2)}</td>
-                <td class="currency">£${(
-                  totalSales / employeeData.length
-                ).toFixed(2)}</td>
-            </tr>
-            <tr>
-                <td>Total Commission</td>
-                <td class="currency">£${totalCommission.toFixed(2)}</td>
-                <td class="currency">£${(
-                  totalCommission / employeeData.length
-                ).toFixed(2)}</td>
-            </tr>
-            <tr class="totals-row">
-                <td><strong>Total Payments</strong></td>
-                <td class="currency"><strong>£${totalPayment.toFixed(
-                  2
-                )}</strong></td>
-                <td class="currency"><strong>£${(
-                  totalPayment / employeeData.length
-                ).toFixed(2)}</strong></td>
-            </tr>
-        </table>
-    </div>
-  `;
-  container.appendChild(summarySection);
-}
-// PYT Hairstyle Dashboard JavaScript - Part 4 FIXED: Complete Rendering Function
-
 // Render employee reports with PYT styling
 function renderEmployeeReports() {
   const container = document.getElementById("employeeReports");
@@ -389,16 +322,17 @@ function renderEmployeeReports() {
       paymentTypeDisplay = "💇‍♀️ Hourly Rate Only";
     }
 
-    // COMPLETE EMPLOYEE HTML - FIXED
     section.innerHTML = `
       <div class="employee-header">
         💇‍♀️ ${emp.name} - ${emp.period}
         <span style="float: right; font-size: 14px;">
             ${paymentTypeDisplay} | Total: £${emp.finalTotal.toFixed(2)} | 
             <span style="color: ${
+              emp.adjustedSales > 0 &&
               (emp.finalTotal / emp.adjustedSales) * 100 < 35
                 ? "#4CAF50"
-                : (emp.finalTotal / emp.adjustedSales) * 100 < 50
+                : emp.adjustedSales > 0 &&
+                  (emp.finalTotal / emp.adjustedSales) * 100 < 50
                 ? "#FF9800"
                 : "#F44336"
             };">
@@ -602,115 +536,126 @@ function renderEmployeeReports() {
     container.appendChild(section);
   });
 
-  // Add individual summary section
+  // Add individual summary section if more than one employee
   if (employeeData.length > 1) {
     addIndividualSummarySection(container);
   }
 }
-// PYT Hairstyle Dashboard JavaScript - Part 6: Google Sheets and CSV Functions
+
+function addIndividualSummarySection(container) {
+  const totalPayment = employeeData.reduce(
+    (sum, emp) => sum + emp.finalTotal,
+    0
+  );
+  const totalSales = employeeData.reduce(
+    (sum, emp) => sum + emp.adjustedSales,
+    0
+  );
+  const totalCommission = employeeData.reduce(
+    (sum, emp) => sum + emp.salesCommission,
+    0
+  );
+  const totalHours = employeeData.reduce(
+    (sum, emp) => sum + emp.workedHours,
+    0
+  );
+
+  const summarySection = document.createElement("div");
+  summarySection.className = "employee-section";
+  summarySection.innerHTML = `
+    <div class="employee-header">
+        📊 PYT Hairstyle Stylist Summary - ${employeeData.length} Team Members
+    </div>
+    <div class="summary-section">
+        <table class="summary-table">
+            <tr>
+                <th>Metric</th>
+                <th>Total</th>
+                <th>Average per Stylist</th>
+            </tr>
+            <tr>
+                <td>Total Service Hours</td>
+                <td>${totalHours.toFixed(2)}</td>
+                <td>${(totalHours / employeeData.length).toFixed(2)}</td>
+            </tr>
+            <tr>
+                <td>Total Sales</td>
+                <td class="currency">£${totalSales.toFixed(2)}</td>
+                <td class="currency">£${(
+                  totalSales / employeeData.length
+                ).toFixed(2)}</td>
+            </tr>
+            <tr>
+                <td>Total Commission</td>
+                <td class="currency">£${totalCommission.toFixed(2)}</td>
+                <td class="currency">£${(
+                  totalCommission / employeeData.length
+                ).toFixed(2)}</td>
+            </tr>
+            <tr class="totals-row">
+                <td><strong>Total Payments</strong></td>
+                <td class="currency"><strong>£${totalPayment.toFixed(
+                  2
+                )}</strong></td>
+                <td class="currency"><strong>£${(
+                  totalPayment / employeeData.length
+                ).toFixed(2)}</strong></td>
+            </tr>
+        </table>
+    </div>
+  `;
+  container.appendChild(summarySection);
+}
 
 // PYT-specific functions with correct URL formats
-// IMMEDIATE FIX: Replace your fetchPYTFromGoogleSheets function with this version
-
-// SIMPLE FIX: Replace your fetchPYTFromGoogleSheets function with this version
-// This removes the problematic headers that cause CORS issues
-
 async function fetchPYTFromGoogleSheets() {
   const sheetTab = document.getElementById("sheetTab").value || "july";
   const sheetId = "1VlQ9JRTSCdtIyxbh-AffUawdAIEgZw33W_poq1X6R5s"; // PYT Sheet ID
 
   showStatus(`Fetching PYT Hairstyle data from ${sheetTab} tab...`, "status");
 
-  // Cache busting with timestamp only (no problematic headers)
-  const timestamp = new Date().getTime();
-
-  // Try multiple URL formats with cache busting
+  // Try multiple URL formats
   const urlsToTry = [
-    // Cache bust URLs
-    `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0&_=${timestamp}`,
-    `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=0&_=${timestamp}`,
-    // Standard URLs (fallback)
-    `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`,
+    `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(
+      sheetTab
+    )}`,
+    `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&sheet=${encodeURIComponent(
+      sheetTab
+    )}`,
+    `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`, // fallback to default sheet
     `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=0`,
   ];
 
   for (let i = 0; i < urlsToTry.length; i++) {
     const csvUrl = urlsToTry[i];
-    console.log(`🔄 Trying PYT URL ${i + 1}:`, csvUrl);
+    console.log(`Trying PYT URL ${i + 1}:`, csvUrl);
 
     try {
       const response = await fetch(csvUrl, {
         method: "GET",
         mode: "cors",
-        // NO CACHE HEADERS - they cause CORS issues
       });
 
-      console.log(`🌐 PYT Response ${i + 1} status:`, response.status);
+      console.log(`PYT Response ${i + 1} status:`, response.status);
 
       if (response.ok) {
         const csvText = await response.text();
-        console.log(`📄 Success! CSV length:`, csvText.length);
-
-        // Quick check for correct data
-        const hasNewData =
-          csvText.includes("61193") ||
-          csvText.includes("14942") ||
-          csvText.includes("22.29");
-        const hasOldData =
-          csvText.includes("4207.37") || csvText.includes("129.74");
-
-        console.log(`📊 Data Check:`);
-        console.log(`   Contains NEW data (£61,193 sales): ${hasNewData}`);
-        console.log(`   Contains OLD data (£4,207 sales): ${hasOldData}`);
-
-        if (hasOldData && !hasNewData) {
-          console.log(`⚠️ This URL still has cached old data, trying next...`);
-          continue;
-        }
-
-        debugCSVStructure(csvText);
+        console.log(
+          `PYT Success with URL ${i + 1}! First 500 chars:`,
+          csvText.substring(0, 500)
+        );
 
         // Check if this looks like our PYT data
         if (
           csvText.length > 50 &&
-          (csvText.includes("Employee") || csvText.includes(","))
+          (csvText.includes("employee") ||
+            csvText.includes("Employee") ||
+            csvText.includes(","))
         ) {
           const parsedData = parsePYTCSVToEmployeeData(csvText);
-          console.log("📊 Parsed PYT employee data:", parsedData);
+          console.log("Parsed PYT employee data:", parsedData);
 
           if (parsedData.employees.length > 0) {
-            // Verify the data quality
-            const totalSales = parsedData.employees.reduce(
-              (sum, emp) => sum + emp.adjustedSales,
-              0
-            );
-            const totalSalaries = parsedData.employees.reduce(
-              (sum, emp) => sum + emp.finalTotal,
-              0
-            );
-            const shopEfficiency = (totalSalaries / totalSales) * 100;
-
-            console.log(`🎯 FINAL VERIFICATION:`);
-            console.log(
-              `   Total Sales: £${totalSales.toFixed(2)} (should be ~£61,193)`
-            );
-            console.log(
-              `   Total Payroll: £${totalSalaries.toFixed(
-                2
-              )} (should be ~£14,943)`
-            );
-            console.log(
-              `   Shop Efficiency: ${shopEfficiency.toFixed(
-                2
-              )}% (should be ~22%)`
-            );
-
-            if (totalSales > 50000) {
-              console.log("✅ SUCCESS: Got the NEW correct data!");
-            } else if (totalSales < 10000) {
-              console.log("❌ WARNING: This looks like OLD incorrect data");
-            }
-
             const mockData = parsedData.employees.map((emp) => ({
               Employee: emp.name,
               Period: emp.period,
@@ -736,7 +681,7 @@ async function fetchPYTFromGoogleSheets() {
               SalaryShareOfShop: `${emp.salaryShareOfShop.toFixed(2)}%`,
             }));
 
-            // Add SHOP_METRICS
+            // Add SHOP_METRICS if found
             if (parsedData.shopMetrics) {
               mockData.push({
                 Employee: "SHOP_METRICS",
@@ -761,33 +706,19 @@ async function fetchPYTFromGoogleSheets() {
 
             receiveWorkflowData(mockData);
             return;
+          } else {
+            console.log("No valid PYT employee data found, trying next URL...");
           }
+        } else {
+          console.log(
+            "Response doesn't look like PYT CSV data, trying next URL..."
+          );
         }
       }
     } catch (error) {
-      console.log(`❌ PYT URL ${i + 1} failed:`, error.message);
+      console.log(`PYT URL ${i + 1} failed:`, error.message);
     }
   }
-
-  // All URLs failed - provide helpful message
-  showStatus(
-    `Google Sheets CSV is still cached with old data. Solutions: 1) Click "Load Test Data" for immediate results, 2) Wait 10-15 minutes and try again, 3) Try opening the sheet in a new browser tab to refresh the cache`,
-    "error"
-  );
-
-  // If all URLs failed, suggest manual solutions
-  showStatus(
-    `⚠️ Could not fetch updated data from Google Sheets. This might be a caching issue. Try: 1) Wait 5-10 minutes for Google's cache to update, 2) Use "Load Test Data" button, 3) Check if you're on the correct "${sheetTab}" tab`,
-    "error"
-  );
-
-  console.log(`💡 TROUBLESHOOTING TIPS:`);
-  console.log(`   1. Your Google Sheet has the correct data (✅ confirmed)`);
-  console.log(`   2. Google Sheets CSV export might be cached`);
-  console.log(`   3. Try clicking "Load Test Data" for immediate results`);
-  console.log(
-    `   4. Or wait 5-10 minutes and try "Fetch from Google Sheets" again`
-  );
 
   // If all URLs failed
   showStatus(
@@ -795,8 +726,8 @@ async function fetchPYTFromGoogleSheets() {
     "error"
   );
 }
-// FIXED CSV Parser for PYT Data - Replace the existing parsePYTCSVToEmployeeData function
 
+// Parse CSV data to PYT employee format - SIMPLIFIED VERSION MATCHING YOUR WORKING DASHBOARD
 function parsePYTCSVToEmployeeData(csvText) {
   const lines = csvText.split("\n");
   const employees = [];
@@ -804,59 +735,48 @@ function parsePYTCSVToEmployeeData(csvText) {
 
   console.log("🔍 PYT CSV lines:", lines.length);
 
-  // First, let's identify the header row and column positions
-  let headerRow = -1;
-  let columnMap = {};
-
-  for (let i = 0; i < Math.min(3, lines.length); i++) {
+  for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
 
     const columns = line.split(",").map((col) => col.replace(/"/g, "").trim());
 
-    // Look for header row
-    if (columns.includes("Employee") && columns.includes("FinalTotal")) {
-      headerRow = i;
-      // Map column positions
-      columns.forEach((header, index) => {
-        columnMap[header] = index;
-      });
-      console.log("📋 Found header at row", i, "with columns:", columnMap);
-      break;
+    // DEBUG: Log first few rows to see structure
+    if (i <= 5) {
+      console.log(
+        `🔍 Row ${i}: "${columns[0]}" | Length: ${
+          columns.length
+        } | Full: [${columns.slice(0, 3).join(", ")}...]`
+      );
     }
-  }
 
-  if (headerRow === -1) {
-    console.error("❌ No header row found in CSV");
-    return { employees: [], shopMetrics: null };
-  }
+    // Skip header rows and empty rows
+    if (
+      i <= 0 ||
+      columns[0] === "employee" ||
+      columns[0] === "" ||
+      columns[0] === "Employee"
+    ) {
+      continue;
+    }
 
-  for (let i = headerRow + 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    const columns = line.split(",").map((col) => col.replace(/"/g, "").trim());
-
-    // Handle SHOP_METRICS row - FIXED COLUMN MAPPING
+    // Handle SHOP_METRICS row
     if (columns[0] === "SHOP_METRICS") {
-      console.log(`📊 Found SHOP_METRICS with ${columns.length} columns`);
+      console.log(
+        `📊 Found SHOP_METRICS with ${columns.length} columns:`,
+        columns
+      );
 
       shopMetrics = {
-        period: columns[columnMap.Period] || "2025-07",
-        totalDays: parseFloat(columns[columnMap.WorkedDays]) || 0,
-        totalHours: parseFloat(columns[columnMap.WorkedHours]) || 0,
-        totalSales:
-          parseFloat(columns[columnMap.AdjustedSales]?.replace(/[£,"]/g, "")) ||
-          0,
-        totalSalaries:
-          parseFloat(columns[columnMap.FinalTotal]?.replace(/[£,"]/g, "")) || 0,
-        shopEfficiency: 0, // We'll calculate this
-        description:
-          columns[columnMap.Description] ||
-          "PYT Hairstyle shop metrics from CSV",
+        period: columns[1] || "2025-07",
+        totalDays: parseFloat(columns[3]) || 0,
+        totalHours: parseFloat(columns[4]) || 0,
+        totalSales: parseFloat(columns[10]?.replace(/[£,"]/g, "")) || 0,
+        totalSalaries: parseFloat(columns[13]?.replace(/[£,"]/g, "")) || 0,
+        shopEfficiency: 0,
+        description: columns[16] || "PYT Hairstyle shop metrics from CSV",
       };
 
-      // Calculate efficiency
       if (shopMetrics.totalSales > 0) {
         shopMetrics.shopEfficiency =
           (shopMetrics.totalSalaries / shopMetrics.totalSales) * 100;
@@ -866,7 +786,7 @@ function parsePYTCSVToEmployeeData(csvText) {
       continue;
     }
 
-    // Handle Employee rows - FIXED PARSING with proper column mapping
+    // Handle Employee rows - using the same logic as your working dashboard
     if (
       columns[0] &&
       !columns[0].includes("Daily Breakdown") &&
@@ -879,114 +799,41 @@ function parsePYTCSVToEmployeeData(csvText) {
         `Found PYT employee: ${columns[0]} - ${columns.length} columns`
       );
 
-      // FIXED: Use proper column mapping instead of hardcoded positions
-      const workedHours = parseFloat(columns[columnMap.WorkedHours]) || 0;
-      const hourlyRate =
-        parseFloat(columns[columnMap.HourlyRate]?.replace(/[£,"]/g, "")) || 0;
-      const totalSales =
-        parseFloat(columns[columnMap.TotalSales]?.replace(/[£,"]/g, "")) || 0;
-      const addlSales =
-        parseFloat(columns[columnMap.AddlSales]?.replace(/[£,"]/g, "")) || 0;
-      const adjustedSales =
-        parseFloat(columns[columnMap.AdjustedSales]?.replace(/[£,"]/g, "")) ||
-        0;
-      const finalTotal =
-        parseFloat(columns[columnMap.FinalTotal]?.replace(/[£,"]/g, "")) || 0;
-      const salesCommission =
-        parseFloat(columns[columnMap.SalesCommission]?.replace(/[£,"]/g, "")) ||
-        0;
-      const bonusPayment =
-        parseFloat(columns[columnMap.BonusPayment]?.replace(/[£,"]/g, "")) || 0;
+      if (columns.length >= 15) {
+        const employee = {
+          name: columns[0],
+          period: columns[1] || "2025-07",
+          paymentType: columns[2] || "HOURLY ONLY",
+          workedDays: parseFloat(columns[3]) || 0,
+          workedHours: parseFloat(columns[4]) || 0,
+          hourlyRate: parseFloat(columns[5]?.replace(/[£,"]/g, "")) || 0,
+          salesPercentage: columns[6] || "N/A",
+          basePayment: parseFloat(columns[7]?.replace(/[£,"]/g, "")) || 0,
+          totalSales: parseFloat(columns[8]?.replace(/[£,"]/g, "")) || 0,
+          addlSales: parseFloat(columns[9]?.replace(/[£,"]/g, "")) || 0,
+          adjustedSales: parseFloat(columns[10]?.replace(/[£,"]/g, "")) || 0,
+          salesCommission: parseFloat(columns[11]?.replace(/[£,"]/g, "")) || 0,
+          bonusPayment: parseFloat(columns[12]?.replace(/[£,"]/g, "")) || 0,
+          finalTotal: parseFloat(columns[13]?.replace(/[£,"]/g, "")) || 0,
+          avgSalesPerDay: parseFloat(columns[14]?.replace(/[£,"]/g, "")) || 0,
+          avgSalesPerHour: parseFloat(columns[15]?.replace(/[£,"]/g, "")) || 0,
+          description: columns[16] || "PYT standard configuration",
+          configVersion: columns[17] || "2025-v1",
+          dataIssues: columns[18] || "None",
+          salaryToSalesPct: parseFloat(columns[19]?.replace(/[%,"]/g, "")) || 0,
+          salesShareOfShop: parseFloat(columns[20]?.replace(/[%,"]/g, "")) || 0,
+          salaryShareOfShop:
+            parseFloat(columns[21]?.replace(/[%,"]/g, "")) || 0,
+        };
 
-      // FIXED: Calculate base payment properly
-      let basePayment = parseFloat(
-        columns[columnMap.BasePayment]?.replace(/[£,"]/g, "")
-      );
-
-      // If base payment is wrong (like £1.00), recalculate it
-      if (basePayment <= 1 && workedHours > 0 && hourlyRate > 0) {
-        basePayment = workedHours * hourlyRate;
-        console.log(
-          `🔧 RECALCULATED basePayment for ${
-            columns[0]
-          }: ${workedHours} × £${hourlyRate} = £${basePayment.toFixed(2)}`
-        );
+        employees.push(employee);
+        console.log(`✅ ADDED PYT: ${employee.name} - £${employee.finalTotal}`);
       }
-
-      const employee = {
-        name: columns[columnMap.Employee],
-        period: columns[columnMap.Period] || "2025-07",
-        paymentType: columns[columnMap.PaymentType] || "HOURLY ONLY",
-        workedDays: parseFloat(columns[columnMap.WorkedDays]) || 0,
-        workedHours: workedHours,
-        hourlyRate: hourlyRate,
-        salesPercentage: columns[columnMap.SalesPercentage] || "N/A",
-        basePayment: basePayment,
-        totalSales: totalSales,
-        addlSales: addlSales,
-        adjustedSales: adjustedSales,
-        salesCommission: salesCommission,
-        bonusPayment: bonusPayment,
-        finalTotal: finalTotal,
-        avgSalesPerDay:
-          parseFloat(
-            columns[columnMap.AvgSalesPerDay]?.replace(/[£,"]/g, "")
-          ) ||
-          (adjustedSales && parseFloat(columns[columnMap.WorkedDays]) > 0
-            ? adjustedSales / parseFloat(columns[columnMap.WorkedDays])
-            : 0),
-        avgSalesPerHour:
-          parseFloat(
-            columns[columnMap.AvgSalesPerHour]?.replace(/[£,"]/g, "")
-          ) ||
-          (adjustedSales && workedHours > 0 ? adjustedSales / workedHours : 0),
-        description:
-          columns[columnMap.Description] || "PYT standard configuration",
-        configVersion: columns[columnMap.ConfigVersion] || "2025-v1",
-        dataIssues: columns[columnMap.DataIssues] || "None",
-        salaryToSalesPct:
-          adjustedSales > 0 ? (finalTotal / adjustedSales) * 100 : 0,
-        salesShareOfShop: 0, // Will be calculated later
-        salaryShareOfShop: 0, // Will be calculated later
-      };
-
-      // VALIDATION: Check if the data makes sense
-      const expectedBasePayment = workedHours * hourlyRate;
-      if (Math.abs(basePayment - expectedBasePayment) > 1) {
-        console.warn(
-          `⚠️ ${
-            employee.name
-          }: Base payment mismatch - CSV: £${basePayment}, Expected: £${expectedBasePayment.toFixed(
-            2
-          )}`
-        );
-      }
-
-      // VALIDATION: Check final total calculation
-      const expectedFinalTotal = basePayment + salesCommission + bonusPayment;
-      if (Math.abs(finalTotal - expectedFinalTotal) > 1) {
-        console.warn(
-          `⚠️ ${
-            employee.name
-          }: Final total mismatch - CSV: £${finalTotal}, Expected: £${expectedFinalTotal.toFixed(
-            2
-          )}`
-        );
-      }
-
-      employees.push(employee);
-      console.log(
-        `✅ ADDED PYT: ${employee.name} - £${employee.finalTotal} (Base: £${employee.basePayment}, Hours: ${employee.workedHours}, Rate: £${employee.hourlyRate})`
-      );
     }
   }
 
-  // Calculate shop metrics from employee data if not found or looks wrong
-  if (
-    !shopMetrics ||
-    shopMetrics.totalSales < 100 ||
-    shopMetrics.totalSalaries < 100
-  ) {
+  // Calculate shop metrics from employee data if not found
+  if (!shopMetrics && employees.length > 0) {
     const totalSales = employees.reduce(
       (sum, emp) => sum + emp.adjustedSales,
       0
@@ -1011,97 +858,130 @@ function parsePYTCSVToEmployeeData(csvText) {
     console.log(`🧮 Calculated PYT shop metrics:`, shopMetrics);
   }
 
-  // Update employee percentages with correct shop totals
-  if (shopMetrics && employees.length > 0) {
-    employees.forEach((emp) => {
-      emp.salesShareOfShop =
-        shopMetrics.totalSales > 0
-          ? (emp.adjustedSales / shopMetrics.totalSales) * 100
-          : 0;
-      emp.salaryShareOfShop =
-        shopMetrics.totalSalaries > 0
-          ? (emp.finalTotal / shopMetrics.totalSalaries) * 100
-          : 0;
-    });
-  }
-
-  // FINAL VALIDATION: Check overall data quality
-  console.log(`📊 PYT DATA QUALITY CHECK:`);
-  console.log(`   Employees processed: ${employees.length}`);
-  console.log(`   Shop efficiency: ${shopMetrics?.shopEfficiency.toFixed(2)}%`);
-
-  if (shopMetrics?.shopEfficiency > 100) {
-    console.warn(
-      `⚠️ HIGH ALERT: Salon efficiency is ${shopMetrics.shopEfficiency.toFixed(
-        2
-      )}% - paying more in wages than earning in sales!`
-    );
-  }
-
+  console.log(`📊 PYT SUMMARY: Added ${employees.length} employees`);
   return { employees, shopMetrics };
 }
 
-// DEBUGGING FUNCTION: Add this to help debug CSV structure
-function debugCSVStructure(csvText) {
-  const lines = csvText.split("\n");
-  console.log("🔍 DEBUG: Analyzing CSV structure...");
+// Compare two sheets function
+async function fetchAndComparePYTSheets() {
+  const sheet1 = document.getElementById("sheetTab").value || "july";
+  const sheet2 = document.getElementById("compareSheet").value;
 
-  for (let i = 0; i < Math.min(5, lines.length); i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    const columns = line.split(",").map((col) => col.replace(/"/g, "").trim());
-    console.log(`Row ${i}: [${columns.length} columns]`);
-
-    // Show first 15 columns with their indices
-    for (let j = 0; j < Math.min(15, columns.length); j++) {
-      console.log(`  [${j}]: "${columns[j]}"`);
-    }
-
-    if (i === 0) {
-      console.log("📋 This should be your header row");
-    }
-    console.log("---");
+  if (!sheet2) {
+    alert("Please enter a second sheet name to compare with");
+    return;
   }
 
-  // Look for SHOP_METRICS row specifically
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    const columns = line.split(",").map((col) => col.replace(/"/g, "").trim());
-
-    if (columns[0] === "SHOP_METRICS") {
-      console.log(`🎯 SHOP_METRICS found at row ${i}:`);
-      for (let j = 0; j < Math.min(15, columns.length); j++) {
-        console.log(`  [${j}]: "${columns[j]}"`);
-      }
-      break;
-    }
+  if (sheet1 === sheet2) {
+    alert("Please enter different sheet names to compare");
+    return;
   }
 
-  // Look for first employee row
-  const pytEmployee = PYT_EMPLOYEES.find((name) =>
-    lines.some((line) => line.includes(name))
+  showStatus(
+    `Loading PYT Hairstyle ${sheet1} and ${sheet2} for comparison...`,
+    "status"
   );
 
-  if (pytEmployee) {
-    const employeeLineIndex = lines.findIndex(
-      (line) => line.split(",")[0].replace(/"/g, "").trim() === pytEmployee
+  try {
+    // Load first sheet
+    document.getElementById("sheetTab").value = sheet1;
+    await fetchPYTFromGoogleSheets();
+    const data1 = {
+      employees: JSON.parse(JSON.stringify(employeeData)),
+      shopMetrics: shopMetrics ? JSON.parse(JSON.stringify(shopMetrics)) : null,
+    };
+
+    // Load second sheet
+    document.getElementById("sheetTab").value = sheet2;
+    await fetchPYTFromGoogleSheets();
+    const data2 = {
+      employees: JSON.parse(JSON.stringify(employeeData)),
+      shopMetrics: shopMetrics ? JSON.parse(JSON.stringify(shopMetrics)) : null,
+    };
+
+    // Render comparison (you can add this function later if needed)
+    alert(
+      `Comparison loaded: ${sheet1} vs ${sheet2}. Comparison rendering coming soon!`
     );
 
-    if (employeeLineIndex >= 0) {
-      const columns = lines[employeeLineIndex]
-        .split(",")
-        .map((col) => col.replace(/"/g, "").trim());
-      console.log(
-        `👤 First employee (${pytEmployee}) at row ${employeeLineIndex}:`
-      );
-      for (let j = 0; j < Math.min(15, columns.length); j++) {
-        console.log(`  [${j}]: "${columns[j]}"`);
-      }
-    }
+    // Restore original sheet name
+    document.getElementById("sheetTab").value = sheet1;
+  } catch (error) {
+    showStatus("Error comparing PYT sheets: " + error.message, "error");
   }
 }
-// PYT Hairstyle Dashboard JavaScript - Part 8: Final Functions and Event Listeners
+
+function loadPYTTestData() {
+  // Test data based on your PYT N8N workflow structure
+  const testData = [
+    {
+      Employee: "Hasseb Alina",
+      Period: "2025-07",
+      PaymentType: "HOURLY ONLY",
+      WorkedDays: "22",
+      WorkedHours: "176.00",
+      HourlyRate: "£12.50",
+      SalesPercentage: "N/A",
+      BasePayment: "£2200.00",
+      TotalSales: "£3450.00",
+      AddlSales: "£125.00",
+      AdjustedSales: "£3575.00",
+      SalesCommission: "£0.00",
+      BonusPayment: "£0.00",
+      FinalTotal: "£2200.00",
+      AvgSalesPerDay: "£162.50",
+      AvgSalesPerHour: "£20.31",
+      Description: "Senior stylist: £12.50/hour, no commission",
+      ConfigVersion: "2025-v1",
+      DataIssues: "None",
+      SalaryToSalesPct: "61.54%",
+      SalesShareOfShop: "18.75%",
+      SalaryShareOfShop: "22.45%",
+    },
+    {
+      Employee: "Makeel Rimsha",
+      Period: "2025-07",
+      PaymentType: "HOURLY ONLY",
+      WorkedDays: "20",
+      WorkedHours: "160.00",
+      HourlyRate: "£12.21",
+      SalesPercentage: "N/A",
+      BasePayment: "£1953.60",
+      TotalSales: "£2850.00",
+      AddlSales: "£75.00",
+      AdjustedSales: "£2925.00",
+      SalesCommission: "£0.00",
+      BonusPayment: "£0.00",
+      FinalTotal: "£1953.60",
+      AvgSalesPerDay: "£146.25",
+      AvgSalesPerHour: "£18.28",
+      Description: "Senior stylist: £12.21/hour, no commission",
+      ConfigVersion: "2025-v1",
+      DataIssues: "None",
+      SalaryToSalesPct: "66.82%",
+      SalesShareOfShop: "15.33%",
+      SalaryShareOfShop: "19.92%",
+    },
+    {
+      Employee: "SHOP_METRICS",
+      Period: "2025-07",
+      PaymentType: "ALL_TYPES",
+      WorkedDays: "100",
+      WorkedHours: "800.00",
+      AdjustedSales: "£19075.00",
+      FinalTotal: "£9801.60",
+      Description:
+        "PYT Hairstyle salon efficiency: 51.39% salary cost of total sales",
+      ConfigVersion: "2025-v1",
+      DataIssues: "None",
+      SalaryToSalesPct: "51.39%",
+      SalesShareOfShop: "100.00%",
+      SalaryShareOfShop: "100.00%",
+    },
+  ];
+
+  receiveWorkflowData(testData);
+}
 
 function clearData() {
   employeeData = [];
@@ -1121,7 +1001,7 @@ function exportToExcel() {
 
   const wb = XLSX.utils.book_new();
 
-  // Create summary sheet with business metrics
+  // Create summary sheet
   const summaryData = [
     ["PYT Hairstyle Employee Payment Report - Generated from N8N Workflow"],
     ["Generated:", new Date().toLocaleString()],
@@ -1185,7 +1065,6 @@ function exportToExcel() {
     ]);
   });
 
-  // Add shop metrics summary
   if (shopMetrics) {
     summaryData.push([]);
     summaryData.push(["PYT HAIRSTYLE SALON SUMMARY"]);
@@ -1270,120 +1149,11 @@ function exportToExcel() {
   XLSX.writeFile(wb, filename);
 }
 
-function loadPYTTestData() {
-  // Test data based on your PYT N8N workflow structure
-  const testData = [
-    {
-      Employee: "Employee",
-      Period: "Period",
-      PaymentType: "Payment Type",
-      WorkedDays: "Worked Days",
-      WorkedHours: "Worked Hours",
-      HourlyRate: "Hourly Rate",
-      SalesPercentage: "Sales %",
-      BasePayment: "Base Payment",
-      TotalSales: "Total Sales",
-      AddlSales: "Addl Sales",
-      AdjustedSales: "Adjusted Sales",
-      SalesCommission: "Sales Commission",
-      BonusPayment: "Bonus Payment",
-      FinalTotal: "Final Total Payment",
-      AvgSalesPerDay: "Avg Sales/Day",
-      AvgSalesPerHour: "Avg Sales/Hour",
-      Description: "Pay Structure Description",
-      ConfigVersion: "Config Version",
-      DataIssues: "Data Issues",
-      SalaryToSalesPct: "Salary vs Own Sales %",
-      SalesShareOfShop: "Sales Share of Shop %",
-      SalaryShareOfShop: "Salary Share of Shop %",
-    },
-    {
-      Employee: "Hasseb Alina",
-      Period: "2025-07",
-      PaymentType: "HOURLY ONLY",
-      WorkedDays: "22",
-      WorkedHours: "176.00",
-      HourlyRate: "£12.50",
-      SalesPercentage: "N/A",
-      BasePayment: "£2200.00",
-      TotalSales: "£3450.00",
-      AddlSales: "£125.00",
-      AdjustedSales: "£3575.00",
-      SalesCommission: "£0.00",
-      BonusPayment: "£0.00",
-      FinalTotal: "£2200.00",
-      AvgSalesPerDay: "£162.50",
-      AvgSalesPerHour: "£20.31",
-      Description: "Senior stylist: £12.50/hour, no commission",
-      ConfigVersion: "2025-v1",
-      DataIssues: "None",
-      SalaryToSalesPct: "61.54%",
-      SalesShareOfShop: "18.75%",
-      SalaryShareOfShop: "22.45%",
-    },
-    {
-      Employee: "Makeel Rimsha",
-      Period: "2025-07",
-      PaymentType: "HOURLY ONLY",
-      WorkedDays: "20",
-      WorkedHours: "160.00",
-      HourlyRate: "£12.21",
-      SalesPercentage: "N/A",
-      BasePayment: "£1953.60",
-      TotalSales: "£2850.00",
-      AddlSales: "£75.00",
-      AdjustedSales: "£2925.00",
-      SalesCommission: "£0.00",
-      BonusPayment: "£0.00",
-      FinalTotal: "£1953.60",
-      AvgSalesPerDay: "£146.25",
-      AvgSalesPerHour: "£18.28",
-      Description: "Senior stylist: £12.21/hour, no commission",
-      ConfigVersion: "2025-v1",
-      DataIssues: "None",
-      SalaryToSalesPct: "66.82%",
-      SalesShareOfShop: "15.33%",
-      SalaryShareOfShop: "19.92%",
-    },
-    {
-      Employee: "SHOP_METRICS",
-      Period: "2025-07",
-      PaymentType: "ALL_TYPES",
-      WorkedDays: "100",
-      WorkedHours: "800.00",
-      AdjustedSales: "£19075.00",
-      FinalTotal: "£9801.60",
-      Description:
-        "PYT Hairstyle salon efficiency: 51.39% salary cost of total sales",
-      ConfigVersion: "2025-v1",
-      DataIssues: "None",
-      SalaryToSalesPct: "51.39%",
-      SalesShareOfShop: "100.00%",
-      SalaryShareOfShop: "100.00%",
-    },
-  ];
-
-  receiveWorkflowData(testData);
-}
-
-// Check for URL parameters (for simple integration)
-window.addEventListener("load", function () {
-  const urlParams = new URLSearchParams(window.location.search);
-  const dataParam = urlParams.get("data");
-
-  if (dataParam) {
-    try {
-      const data = JSON.parse(decodeURIComponent(dataParam));
-      receiveWorkflowData(data);
-    } catch (error) {
-      showStatus("Error parsing URL data: " + error.message, "error");
-    }
-  }
-});
-
-// For webhook integration (if hosting with backend)
-if (typeof window.receivePYTWebhookData === "undefined") {
-  window.receivePYTWebhookData = receiveWorkflowData;
+// Refresh from N8N
+function refreshFromN8N() {
+  alert(
+    "N8N refresh functionality coming soon! For now, use 'Fetch PYT Data' to get the latest information."
+  );
 }
 
 // Global function for N8N integration
