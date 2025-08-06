@@ -746,6 +746,8 @@ async function fetchPYTFromGoogleSheets() {
 // Parse CSV data to PYT employee format
 // FIXED CSV Parser for PYT Data - Replace the existing parsePYTCSVToEmployeeData function
 
+// FIXED CSV Parser for PYT Data - Replace the existing parsePYTCSVToEmployeeData function
+
 function parsePYTCSVToEmployeeData(csvText) {
   const lines = csvText.split("\n");
   const employees = [];
@@ -753,69 +755,69 @@ function parsePYTCSVToEmployeeData(csvText) {
 
   console.log("🔍 PYT CSV lines:", lines.length);
 
-  for (let i = 0; i < lines.length; i++) {
+  // First, let's identify the header row and column positions
+  let headerRow = -1;
+  let columnMap = {};
+
+  for (let i = 0; i < Math.min(3, lines.length); i++) {
     const line = lines[i].trim();
     if (!line) continue;
 
     const columns = line.split(",").map((col) => col.replace(/"/g, "").trim());
 
-    // Skip header rows and empty rows
-    if (
-      i <= 0 ||
-      columns[0] === "employee" ||
-      columns[0] === "" ||
-      columns[0] === "Employee"
-    ) {
-      continue;
+    // Look for header row
+    if (columns.includes("Employee") && columns.includes("FinalTotal")) {
+      headerRow = i;
+      // Map column positions
+      columns.forEach((header, index) => {
+        columnMap[header] = index;
+      });
+      console.log("📋 Found header at row", i, "with columns:", columnMap);
+      break;
     }
+  }
+
+  if (headerRow === -1) {
+    console.error("❌ No header row found in CSV");
+    return { employees: [], shopMetrics: null };
+  }
+
+  for (let i = headerRow + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const columns = line.split(",").map((col) => col.replace(/"/g, "").trim());
 
     // Handle SHOP_METRICS row - FIXED COLUMN MAPPING
     if (columns[0] === "SHOP_METRICS") {
-      console.log(
-        `📊 Found SHOP_METRICS with ${columns.length} columns:`,
-        columns
-      );
+      console.log(`📊 Found SHOP_METRICS with ${columns.length} columns`);
 
-      // Based on your data structure, map columns correctly:
       shopMetrics = {
-        period: columns[1] || "2025-07",
-        totalDays: parseFloat(columns[3]) || 0,
-        totalHours: parseFloat(columns[4]) || 0,
-        // FIX: AdjustedSales is likely in a different column - let's try multiple positions
+        period: columns[columnMap.Period] || "2025-07",
+        totalDays: parseFloat(columns[columnMap.WorkedDays]) || 0,
+        totalHours: parseFloat(columns[columnMap.WorkedHours]) || 0,
         totalSales:
-          parseFloat(columns[10]?.replace(/[£,"]/g, "")) ||
-          parseFloat(columns[11]?.replace(/[£,"]/g, "")) ||
-          parseFloat(columns[9]?.replace(/[£,"]/g, "")) ||
+          parseFloat(columns[columnMap.AdjustedSales]?.replace(/[£,"]/g, "")) ||
           0,
-        // FIX: FinalTotal is likely in a different column
         totalSalaries:
-          parseFloat(columns[13]?.replace(/[£,"]/g, "")) ||
-          parseFloat(columns[14]?.replace(/[£,"]/g, "")) ||
-          parseFloat(columns[12]?.replace(/[£,"]/g, "")) ||
-          0,
-        shopEfficiency: 0, // We'll calculate this manually
+          parseFloat(columns[columnMap.FinalTotal]?.replace(/[£,"]/g, "")) || 0,
+        shopEfficiency: 0, // We'll calculate this
         description:
-          columns[16] || columns[6] || "PYT Hairstyle shop metrics from CSV",
+          columns[columnMap.Description] ||
+          "PYT Hairstyle shop metrics from CSV",
       };
 
-      // Manual calculation if the values seem wrong
-      if (shopMetrics.totalSales < 100 || shopMetrics.totalSalaries < 100) {
-        console.log(
-          "⚠️ Shop metrics seem incorrect, will calculate from employee data"
-        );
-        shopMetrics = null; // This will trigger calculation from employee data
-      } else {
+      // Calculate efficiency
+      if (shopMetrics.totalSales > 0) {
         shopMetrics.shopEfficiency =
-          shopMetrics.totalSales > 0
-            ? (shopMetrics.totalSalaries / shopMetrics.totalSales) * 100
-            : 0;
+          (shopMetrics.totalSalaries / shopMetrics.totalSales) * 100;
       }
 
       console.log(`✅ PYT SHOP_METRICS parsed:`, shopMetrics);
       continue;
     }
 
-    // Handle Employee rows - FIXED PARSING
+    // Handle Employee rows - FIXED PARSING with proper column mapping
     if (
       columns[0] &&
       !columns[0].includes("Daily Breakdown") &&
@@ -828,62 +830,224 @@ function parsePYTCSVToEmployeeData(csvText) {
         `Found PYT employee: ${columns[0]} - ${columns.length} columns`
       );
 
-      if (columns.length >= 15) {
-        // FIX: Better parsing with fallback values
-        const finalTotal =
-          parseFloat(columns[13]?.replace(/[£,"]/g, "")) ||
-          parseFloat(columns[14]?.replace(/[£,"]/g, "")) ||
-          parseFloat(columns[12]?.replace(/[£,"]/g, "")) ||
-          0;
+      // FIXED: Use proper column mapping instead of hardcoded positions
+      const workedHours = parseFloat(columns[columnMap.WorkedHours]) || 0;
+      const hourlyRate =
+        parseFloat(columns[columnMap.HourlyRate]?.replace(/[£,"]/g, "")) || 0;
+      const totalSales =
+        parseFloat(columns[columnMap.TotalSales]?.replace(/[£,"]/g, "")) || 0;
+      const addlSales =
+        parseFloat(columns[columnMap.AddlSales]?.replace(/[£,"]/g, "")) || 0;
+      const adjustedSales =
+        parseFloat(columns[columnMap.AdjustedSales]?.replace(/[£,"]/g, "")) ||
+        0;
+      const finalTotal =
+        parseFloat(columns[columnMap.FinalTotal]?.replace(/[£,"]/g, "")) || 0;
+      const salesCommission =
+        parseFloat(columns[columnMap.SalesCommission]?.replace(/[£,"]/g, "")) ||
+        0;
+      const bonusPayment =
+        parseFloat(columns[columnMap.BonusPayment]?.replace(/[£,"]/g, "")) || 0;
 
-        const basePayment =
-          parseFloat(columns[7]?.replace(/[£,"]/g, "")) ||
-          parseFloat(columns[8]?.replace(/[£,"]/g, "")) ||
-          finalTotal; // Use finalTotal as fallback
+      // FIXED: Calculate base payment properly
+      let basePayment = parseFloat(
+        columns[columnMap.BasePayment]?.replace(/[£,"]/g, "")
+      );
 
-        const adjustedSales =
-          parseFloat(columns[10]?.replace(/[£,"]/g, "")) ||
-          parseFloat(columns[11]?.replace(/[£,"]/g, "")) ||
-          0;
-
-        const employee = {
-          name: columns[0],
-          period: columns[1] || "2025-07",
-          paymentType: columns[2] || "HOURLY ONLY",
-          workedDays: parseFloat(columns[3]) || 0,
-          workedHours: parseFloat(columns[4]) || 0,
-          hourlyRate: parseFloat(columns[5]?.replace(/[£,"]/g, "")) || 0,
-          salesPercentage: columns[6] || "N/A",
-          basePayment: basePayment,
-          totalSales: parseFloat(columns[8]?.replace(/[£,"]/g, "")) || 0,
-          addlSales: parseFloat(columns[9]?.replace(/[£,"]/g, "")) || 0,
-          adjustedSales: adjustedSales,
-          salesCommission: parseFloat(columns[11]?.replace(/[£,"]/g, "")) || 0,
-          bonusPayment: parseFloat(columns[12]?.replace(/[£,"]/g, "")) || 0,
-          finalTotal: finalTotal,
-          avgSalesPerDay:
-            parseFloat(columns[14]?.replace(/[£,"]/g, "")) ||
-            (adjustedSales && parseFloat(columns[3]) > 0
-              ? adjustedSales / parseFloat(columns[3])
-              : 0),
-          avgSalesPerHour:
-            parseFloat(columns[15]?.replace(/[£,"]/g, "")) ||
-            (adjustedSales && parseFloat(columns[4]) > 0
-              ? adjustedSales / parseFloat(columns[4])
-              : 0),
-          description: columns[16] || "PYT standard configuration",
-          configVersion: columns[17] || "2025-v1",
-          dataIssues: columns[18] || "None",
-          salaryToSalesPct:
-            adjustedSales > 0 ? (finalTotal / adjustedSales) * 100 : 0,
-          salesShareOfShop: 0, // Will be calculated later
-          salaryShareOfShop: 0, // Will be calculated later
-        };
-
-        employees.push(employee);
+      // If base payment is wrong (like £1.00), recalculate it
+      if (basePayment <= 1 && workedHours > 0 && hourlyRate > 0) {
+        basePayment = workedHours * hourlyRate;
         console.log(
-          `✅ ADDED PYT: ${employee.name} - £${employee.finalTotal} (Base: £${employee.basePayment})`
+          `🔧 RECALCULATED basePayment for ${
+            columns[0]
+          }: ${workedHours} × £${hourlyRate} = £${basePayment.toFixed(2)}`
         );
+      }
+
+      const employee = {
+        name: columns[columnMap.Employee],
+        period: columns[columnMap.Period] || "2025-07",
+        paymentType: columns[columnMap.PaymentType] || "HOURLY ONLY",
+        workedDays: parseFloat(columns[columnMap.WorkedDays]) || 0,
+        workedHours: workedHours,
+        hourlyRate: hourlyRate,
+        salesPercentage: columns[columnMap.SalesPercentage] || "N/A",
+        basePayment: basePayment,
+        totalSales: totalSales,
+        addlSales: addlSales,
+        adjustedSales: adjustedSales,
+        salesCommission: salesCommission,
+        bonusPayment: bonusPayment,
+        finalTotal: finalTotal,
+        avgSalesPerDay:
+          parseFloat(
+            columns[columnMap.AvgSalesPerDay]?.replace(/[£,"]/g, "")
+          ) ||
+          (adjustedSales && parseFloat(columns[columnMap.WorkedDays]) > 0
+            ? adjustedSales / parseFloat(columns[columnMap.WorkedDays])
+            : 0),
+        avgSalesPerHour:
+          parseFloat(
+            columns[columnMap.AvgSalesPerHour]?.replace(/[£,"]/g, "")
+          ) ||
+          (adjustedSales && workedHours > 0 ? adjustedSales / workedHours : 0),
+        description:
+          columns[columnMap.Description] || "PYT standard configuration",
+        configVersion: columns[columnMap.ConfigVersion] || "2025-v1",
+        dataIssues: columns[columnMap.DataIssues] || "None",
+        salaryToSalesPct:
+          adjustedSales > 0 ? (finalTotal / adjustedSales) * 100 : 0,
+        salesShareOfShop: 0, // Will be calculated later
+        salaryShareOfShop: 0, // Will be calculated later
+      };
+
+      // VALIDATION: Check if the data makes sense
+      const expectedBasePayment = workedHours * hourlyRate;
+      if (Math.abs(basePayment - expectedBasePayment) > 1) {
+        console.warn(
+          `⚠️ ${
+            employee.name
+          }: Base payment mismatch - CSV: £${basePayment}, Expected: £${expectedBasePayment.toFixed(
+            2
+          )}`
+        );
+      }
+
+      // VALIDATION: Check final total calculation
+      const expectedFinalTotal = basePayment + salesCommission + bonusPayment;
+      if (Math.abs(finalTotal - expectedFinalTotal) > 1) {
+        console.warn(
+          `⚠️ ${
+            employee.name
+          }: Final total mismatch - CSV: £${finalTotal}, Expected: £${expectedFinalTotal.toFixed(
+            2
+          )}`
+        );
+      }
+
+      employees.push(employee);
+      console.log(
+        `✅ ADDED PYT: ${employee.name} - £${employee.finalTotal} (Base: £${employee.basePayment}, Hours: ${employee.workedHours}, Rate: £${employee.hourlyRate})`
+      );
+    }
+  }
+
+  // Calculate shop metrics from employee data if not found or looks wrong
+  if (
+    !shopMetrics ||
+    shopMetrics.totalSales < 100 ||
+    shopMetrics.totalSalaries < 100
+  ) {
+    const totalSales = employees.reduce(
+      (sum, emp) => sum + emp.adjustedSales,
+      0
+    );
+    const totalSalaries = employees.reduce(
+      (sum, emp) => sum + emp.finalTotal,
+      0
+    );
+    const totalDays = employees.reduce((sum, emp) => sum + emp.workedDays, 0);
+    const totalHours = employees.reduce((sum, emp) => sum + emp.workedHours, 0);
+
+    shopMetrics = {
+      period: employees[0]?.period || "2025-07",
+      totalDays: totalDays,
+      totalHours: totalHours,
+      totalSales: totalSales,
+      totalSalaries: totalSalaries,
+      shopEfficiency: totalSales > 0 ? (totalSalaries / totalSales) * 100 : 0,
+      description: `Calculated from ${employees.length} PYT stylists`,
+    };
+
+    console.log(`🧮 Calculated PYT shop metrics:`, shopMetrics);
+  }
+
+  // Update employee percentages with correct shop totals
+  if (shopMetrics && employees.length > 0) {
+    employees.forEach((emp) => {
+      emp.salesShareOfShop =
+        shopMetrics.totalSales > 0
+          ? (emp.adjustedSales / shopMetrics.totalSales) * 100
+          : 0;
+      emp.salaryShareOfShop =
+        shopMetrics.totalSalaries > 0
+          ? (emp.finalTotal / shopMetrics.totalSalaries) * 100
+          : 0;
+    });
+  }
+
+  // FINAL VALIDATION: Check overall data quality
+  console.log(`📊 PYT DATA QUALITY CHECK:`);
+  console.log(`   Employees processed: ${employees.length}`);
+  console.log(`   Shop efficiency: ${shopMetrics?.shopEfficiency.toFixed(2)}%`);
+
+  if (shopMetrics?.shopEfficiency > 100) {
+    console.warn(
+      `⚠️ HIGH ALERT: Salon efficiency is ${shopMetrics.shopEfficiency.toFixed(
+        2
+      )}% - paying more in wages than earning in sales!`
+    );
+  }
+
+  return { employees, shopMetrics };
+}
+
+// DEBUGGING FUNCTION: Add this to help debug CSV structure
+function debugCSVStructure(csvText) {
+  const lines = csvText.split("\n");
+  console.log("🔍 DEBUG: Analyzing CSV structure...");
+
+  for (let i = 0; i < Math.min(5, lines.length); i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const columns = line.split(",").map((col) => col.replace(/"/g, "").trim());
+    console.log(`Row ${i}: [${columns.length} columns]`);
+
+    // Show first 15 columns with their indices
+    for (let j = 0; j < Math.min(15, columns.length); j++) {
+      console.log(`  [${j}]: "${columns[j]}"`);
+    }
+
+    if (i === 0) {
+      console.log("📋 This should be your header row");
+    }
+    console.log("---");
+  }
+
+  // Look for SHOP_METRICS row specifically
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const columns = line.split(",").map((col) => col.replace(/"/g, "").trim());
+
+    if (columns[0] === "SHOP_METRICS") {
+      console.log(`🎯 SHOP_METRICS found at row ${i}:`);
+      for (let j = 0; j < Math.min(15, columns.length); j++) {
+        console.log(`  [${j}]: "${columns[j]}"`);
+      }
+      break;
+    }
+  }
+
+  // Look for first employee row
+  const pytEmployee = PYT_EMPLOYEES.find((name) =>
+    lines.some((line) => line.includes(name))
+  );
+
+  if (pytEmployee) {
+    const employeeLineIndex = lines.findIndex(
+      (line) => line.split(",")[0].replace(/"/g, "").trim() === pytEmployee
+    );
+
+    if (employeeLineIndex >= 0) {
+      const columns = lines[employeeLineIndex]
+        .split(",")
+        .map((col) => col.replace(/"/g, "").trim());
+      console.log(
+        `👤 First employee (${pytEmployee}) at row ${employeeLineIndex}:`
+      );
+      for (let j = 0; j < Math.min(15, columns.length); j++) {
+        console.log(`  [${j}]: "${columns[j]}"`);
       }
     }
   }
