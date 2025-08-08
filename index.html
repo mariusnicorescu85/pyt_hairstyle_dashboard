@@ -435,6 +435,11 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
+      const money = (v) =>
+        parseFloat(String(v ?? "").replace(/[^0-9.-]+/g, "")) || 0;
+      const pct = (v) =>
+        parseFloat(String(v ?? "").replace(/[^0-9.-]+/g, "")) || 0;
+
       let employeeData = [];
       let shopMetrics = null;
 
@@ -458,7 +463,6 @@
 
         // Sales % variants
         salespercentage: "SalesPercentage",
-        salespercxentage: "SalesPercentage", // typo variant
         sales: "SalesPercentage", // <-- handles "Sales %"
 
         basepayment: "BasePayment",
@@ -505,11 +509,29 @@
       function receiveWorkflowData(data) {
         try {
           console.log("Raw data received:", data);
-          const parsed = parseN8NData(data);
+
+          // 1) Always work with an array of row objects
+          const rows = Array.isArray(data)
+            ? data
+            : data && Array.isArray(data.data)
+            ? data.data
+            : [data];
+
+          // 2) Remap headers to the canonical keys your parser expects
+          //    (requires remapHeadersRow from earlier)
+          const mappedRows = rows.map(remapHeadersRow);
+
+          // (optional) quick sanity log
+          console.log("Sample mapped row:", mappedRows[0]);
+
+          // 3) Now parse like before
+          const parsed = parseN8NData(mappedRows);
+
           employeeData = parsed.employees;
           shopMetrics = parsed.shopMetrics;
           console.log("Parsed employees:", employeeData);
           console.log("Shop metrics:", shopMetrics);
+
           renderEmployeeReports();
           document.getElementById("lastUpdated").textContent =
             new Date().toLocaleString();
@@ -619,64 +641,28 @@
               paymentType: item.PaymentType || "HYBRID",
               workedDays: parseFloat(item.WorkedDays) || 0,
               workedHours: parseFloat(item.WorkedHours) || 0,
-              hourlyRate:
-                parseFloat(
-                  item.HourlyRate?.replace("£", "").replace(",", "")
-                ) || 0,
+              hourlyRate: money(item.HourlyRate),
               salesPercentage:
                 item.SalesPercentage === "Tiered" ||
                 item.SalesPercentage === "N/A"
                   ? item.SalesPercentage
-                  : parseFloat(item.SalesPercentage?.replace("%", "")) / 100 ||
-                    0.2,
-              basePayment:
-                parseFloat(
-                  item.BasePayment?.replace("£", "").replace(",", "")
-                ) || 0,
-              totalSales:
-                parseFloat(
-                  item.TotalSales?.replace("£", "").replace(",", "")
-                ) || 0,
-              addlSales:
-                parseFloat(item.AddlSales?.replace("£", "").replace(",", "")) ||
-                0,
-              adjustedSales:
-                parseFloat(
-                  item.AdjustedSales?.replace("£", "").replace(",", "")
-                ) || 0,
-              salesCommission:
-                parseFloat(
-                  item.SalesCommission?.replace("£", "").replace(",", "")
-                ) || 0,
-              bonusPayment:
-                parseFloat(
-                  item.BonusPayment?.replace("£", "").replace(",", "")
-                ) || 0,
-              totalBeforeBonus:
-                parseFloat(
-                  item.TotalBeforeBonus?.replace("£", "").replace(",", "")
-                ) || 0,
-              finalTotal:
-                parseFloat(
-                  item.FinalTotal?.replace("£", "").replace(",", "")
-                ) || 0,
-              avgSalesPerDay:
-                parseFloat(
-                  item.AvgSalesPerDay?.replace("£", "").replace(",", "")
-                ) || 0,
-              avgSalesPerHour:
-                parseFloat(
-                  item.AvgSalesPerHour?.replace("£", "").replace(",", "")
-                ) || 0,
+                  : pct(item.SalesPercentage) / 100,
+              basePayment: money(item.BasePayment),
+              totalSales: money(item.TotalSales),
+              addlSales: money(item.AddlSales),
+              adjustedSales: money(item.AdjustedSales),
+              salesCommission: money(item.SalesCommission),
+              bonusPayment: money(item.BonusPayment),
+              totalBeforeBonus: money(item.TotalBeforeBonus),
+              finalTotal: money(item.FinalTotal),
+              avgSalesPerDay: money(item.AvgSalesPerDay),
+              avgSalesPerHour: money(item.AvgSalesPerHour),
               description: item.Description || "Standard configuration",
               configVersion: item.ConfigVersion || "N/A",
               dataIssues: item.DataIssues || "None",
-              salaryToSalesPct:
-                parseFloat(item.SalaryToSalesPct?.replace("%", "")) || 0,
-              salesShareOfShop:
-                parseFloat(item.SalesShareOfShop?.replace("%", "")) || 0,
-              salaryShareOfShop:
-                parseFloat(item.SalaryShareOfShop?.replace("%", "")) || 0,
+              salaryToSalesPct: pct(item.SalaryToSalesPct),
+              salesShareOfShop: pct(item.SalesShareOfShop),
+              salaryShareOfShop: pct(item.SalaryShareOfShop),
             };
 
             console.log("Created employee object:", employee);
@@ -685,38 +671,28 @@
         }
 
         // If no SHOP_METRICS found, calculate from employee data
+        // Replace your whole fallback with:
         if (!shopMetrics && employees.length > 0) {
-          const totalSales = employees.reduce(
-            (sum, emp) => sum + emp.adjustedSales,
-            0
-          );
-          const totalSalaries = employees.reduce(
-            (sum, emp) => sum + emp.finalTotal,
-            0
-          );
+          const totalSales = employees.reduce((s, e) => s + e.adjustedSales, 0);
+          const totalSalaries = employees.reduce((s, e) => s + e.finalTotal, 0);
           const totalDays = employees.reduce(
-            (sum, emp) => sum + emp.workedDays,
+            (s, e) => s + (e.workedDays || 0),
             0
           );
           const totalHours = employees.reduce(
-            (sum, emp) => sum + emp.workedHours,
+            (s, e) => s + (e.workedHours || 0),
             0
           );
 
           shopMetrics = {
-            period: employees[0]?.period || "2025-06",
-            totalDays: totalDays,
-            totalHours: totalHours,
-            totalSales: totalSales,
-            totalSalaries: totalSalaries,
-            shopEfficiency:
-              totalSales > 0 ? (totalSalaries / totalSales) * 100 : 0,
-            description: `Calculated from ${employees.length} employees`,
+            period: employees[0]?.period || "unknown",
+            totalDays,
+            totalHours,
+            totalSales,
+            totalSalaries,
+            shopEfficiency: totalSales ? (totalSalaries / totalSales) * 100 : 0,
+            description: "Shop efficiency metrics (computed)",
           };
-          console.log(
-            `✅ Calculated shop metrics from employee data:`,
-            shopMetrics
-          );
         }
 
         console.log("Final employees array:", employees);
@@ -811,6 +787,19 @@
         employeeData.forEach((emp, index) => {
           const section = document.createElement("div");
           section.className = "employee-section";
+
+          const effPct = emp.adjustedSales
+            ? (emp.finalTotal / emp.adjustedSales) * 100
+            : 0;
+          const avgPerHour = emp.workedHours
+            ? emp.adjustedSales / emp.workedHours
+            : 0;
+          const avgPerDay = emp.workedDays
+            ? emp.adjustedSales / emp.workedDays
+            : 0;
+          const earningsPerDay = emp.workedDays
+            ? emp.finalTotal / emp.workedDays
+            : 0;
 
           section.innerHTML = `
                     <div class="employee-header">
