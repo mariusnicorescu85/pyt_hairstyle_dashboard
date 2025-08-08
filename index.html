@@ -3,54 +3,327 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PYT Hairstyle Employee Payment Report - N8N Integration</title>
-    <link rel="stylesheet" href="styles.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <title>PYT Hairstyle Dashboard</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+        color: #333;
+        border-bottom: 3px solid #2196f3;
+        padding-bottom: 20px;
+      }
+      .api-info {
+        background: #e3f2fd;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        border-left: 4px solid #2196f3;
+      }
+      .employee-section {
+        border: 2px solid #2196f3;
+        margin: 20px 0;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .employee-header {
+        background: linear-gradient(135deg, #2196f3, #21cbf3);
+        color: white;
+        padding: 15px;
+        font-size: 18px;
+        font-weight: bold;
+      }
+      .summary-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 0;
+      }
+      .summary-table th,
+      .summary-table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      .summary-table th {
+        background: #f0f8ff;
+        font-weight: bold;
+      }
+      .summary-section {
+        background: #fff;
+        padding: 0;
+      }
+      .totals-row {
+        background: #e8f5e8;
+        font-weight: bold;
+      }
+      .efficiency-row {
+        background: #fff3e0;
+        font-style: italic;
+      }
+      .currency {
+        text-align: right;
+      }
+      .controls {
+        text-align: center;
+        margin: 20px 0;
+      }
+      .btn {
+        background: #4caf50;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 0 5px;
+        font-size: 14px;
+        transition: background 0.3s;
+      }
+      .btn:hover {
+        background: #45a049;
+      }
+      .btn-secondary {
+        background: #2196f3;
+      }
+      .btn-secondary:hover {
+        background: #1976d2;
+      }
+      .status {
+        text-align: center;
+        padding: 20px;
+        font-style: italic;
+        color: #666;
+      }
+      .error {
+        background: #ffebee;
+        color: #c62828;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+      .success {
+        background: #e8f5e8;
+        color: #2e7d32;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+      .test-data-section {
+        background: #fff3e0;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 20px 0;
+        border-left: 4px solid #ff9800;
+      }
+      .code-block {
+        background: #f5f5f5;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: monospace;
+        margin: 10px 0;
+        overflow-x: auto;
+      }
+      .input-row {
+        margin: 10px 0;
+      }
+      .input-row label {
+        display: inline-block;
+        width: 150px;
+        font-weight: bold;
+      }
+      .input-row input {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 200px;
+      }
+      .shop-summary {
+        background: #f3e5f5;
+        border: 2px solid #9c27b0;
+        border-radius: 8px;
+        margin: 20px 0;
+      }
+      .shop-summary .employee-header {
+        background: linear-gradient(135deg, #9c27b0, #e1bee7);
+      }
+      @media print {
+        body {
+          margin: 0;
+        }
+        .controls,
+        .api-info,
+        .test-data-section {
+          display: none;
+        }
+      }
+
+      /* ===== MULTI-MONTH COMPARISON STYLES ===== */
+      .month-tabs {
+        display: flex;
+        margin: 20px 0;
+        border-bottom: 2px solid #2196f3;
+      }
+
+      .month-tab {
+        padding: 10px 20px;
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+        cursor: pointer;
+        margin-right: 2px;
+        border-bottom: none;
+        transition: all 0.3s;
+      }
+
+      .month-tab.active {
+        background: #2196f3;
+        color: white;
+      }
+
+      .month-tab:hover {
+        background: #1976d2;
+        color: white;
+      }
+
+      .comparison-view {
+        margin: 20px 0;
+        background: #f0f8ff;
+        padding: 15px;
+        border-radius: 8px;
+        border: 2px solid #2196f3;
+      }
+
+      .comparison-controls {
+        background: #fff3e0;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+        border-left: 4px solid #ff9800;
+      }
+
+      .trend-indicator {
+        font-size: 16px;
+        font-weight: bold;
+      }
+
+      .improvement {
+        color: #4caf50;
+        background: #e8f5e8;
+        padding: 4px 8px;
+        border-radius: 4px;
+      }
+
+      .decline {
+        color: #f44336;
+        background: #ffebee;
+        padding: 4px 8px;
+        border-radius: 4px;
+      }
+
+      .stable {
+        color: #ff9800;
+        background: #fff3e0;
+        padding: 4px 8px;
+        border-radius: 4px;
+      }
+
+      .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0;
+      }
+
+      .comparison-table th,
+      .comparison-table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: center;
+      }
+
+      .comparison-table th {
+        background: #2196f3;
+        color: white;
+      }
+
+      .comparison-section {
+        margin: 20px 0;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .comparison-header {
+        background: linear-gradient(135deg, #ff9800, #ffc107);
+        color: white;
+        padding: 15px;
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      @media (max-width: 768px) {
+        .month-tabs {
+          flex-direction: column;
+        }
+
+        .comparison-controls select {
+          width: 100%;
+          margin: 5px 0;
+        }
+      }
+    </style>
   </head>
   <body>
     <div class="container">
       <div class="header">
-        <h1>💇‍♀️ PYT Hairstyle Payment Report</h1>
-        <p>Employee Salary & Commission Dashboard</p>
+        <h1>Employee Payment Report</h1>
+        <p>N8N Workflow Integration Ready</p>
         <p>Last Updated: <span id="lastUpdated">Not yet loaded</span></p>
-      </div>
-
-      <div class="pyt-branding">
-        🌟 PYT Hairstyle Collab - Professional Hair & Beauty Services 🌟
       </div>
 
       <div class="api-info">
         <h3>🔗 N8N Integration Instructions</h3>
         <p>
           <strong
-            >Connect your PYT Hairstyle N8N workflow to this dashboard:</strong
+            >To integrate with your workflow, add this HTTP Request node after
+            your "calculate employee payments" node:</strong
           >
         </p>
 
         <div class="code-block">
           <strong>Node Type:</strong> HTTP Request<br />
           <strong>Method:</strong> POST<br />
-          <strong>URL:</strong> [YOUR_HOSTED_URL]/receive-pyt-data<br />
+          <strong>URL:</strong> [YOUR_HOSTED_URL]/receive-data<br />
           <strong>Body:</strong> JSON<br />
           <strong>Body Content:</strong> {{ $json }}
         </div>
 
-        <p><strong>Sheet ID for PYT Hairstyle:</strong></p>
+        <p><strong>Or use URL parameters for simple hosting:</strong></p>
         <div class="code-block">
-          Sheet ID: 1VlQ9JRTSCdtIyxbh-AffUawdAIEgZw33W_poq1X6R5s<br />
-          Tab: july (or june, august, etc.)
+          <strong>Method:</strong> GET<br />
+          <strong>URL:</strong> [YOUR_HOSTED_URL]?data={{
+          encodeURIComponent($json) }}
         </div>
       </div>
 
       <div class="test-data-section">
-        <h3>📊 Load PYT Hairstyle Data</h3>
+        <h3>📊 Load Data from Google Sheets</h3>
         <div class="input-row">
           <label>Sheet Tab Name:</label>
           <input
             type="text"
             id="sheetTab"
-            value="july"
-            placeholder="Enter tab name (e.g. july, june)"
+            value="june"
+            placeholder="Enter tab name (e.g. june, july)"
           />
         </div>
         <div class="input-row">
@@ -63,47 +336,1535 @@
           />
         </div>
         <div class="controls">
-          <button class="btn" onclick="fetchPYTFromGoogleSheets()">
-            📥 Fetch PYT Data
+          <button class="btn" onclick="fetchFromGoogleSheets()">
+            📥 Fetch from Google Sheets
           </button>
-          <button
-            class="btn btn-secondary"
-            onclick="fetchAndComparePYTSheets()"
-          >
-            🔄 Compare Two Months
+          <button class="btn btn-secondary" onclick="fetchAndCompareSheets()">
+            🔄 Compare Two Sheets
           </button>
-          <button class="btn btn-secondary" onclick="loadPYTTestData()">
+          <button class="btn btn-secondary" onclick="loadTestData()">
             🧪 Load Test Data
           </button>
           <button class="btn" onclick="clearData()">🗑️ Clear Data</button>
           <button class="btn btn-secondary" onclick="exportToExcel()">
             📊 Export to Excel
           </button>
-          <button class="btn" onclick="refreshFromN8N()">
-            🔄 Refresh from N8N
+          <button
+            class="btn btn-primary"
+            onclick="window.open('/bi-dashboard.html', '_blank')"
+          >
+            🧠 Open BI Dashboard
           </button>
         </div>
         <p>
-          <small
-            ><strong>PYT Hairstyle Sheet ID:</strong>
-            1VlQ9JRTSCdtIyxbh-AffUawdAIEgZw33W_poq1X6R5s</small
-          ><br />
-          <small
-            ><strong>💡 Tip:</strong> If you have multiple tabs (june, july,
-            august), you may need to find the GID for each tab. In Google
-            Sheets, click on a tab and look at the URL - the number after #gid=
-            is the tab's GID.</small
-          >
+          <small>Sheet ID: 1VlQ9JRTSCdtIyxbh-AffUawdAIEgZw33W_poq1X6R5s</small>
         </p>
       </div>
 
+      <!-- ===== MULTI-MONTH COMPARISON SECTION ===== -->
+      <div class="test-data-section">
+        <h3>📈 Multi-Month Performance Comparison</h3>
+
+        <div class="month-tabs" id="monthTabs">
+          <div class="month-tab active" data-mode="single">
+            Current Month View
+          </div>
+          <div class="month-tab" data-mode="comparison">Compare Months</div>
+        </div>
+
+        <div
+          id="comparisonControls"
+          class="comparison-controls"
+          style="display: none"
+        >
+          <h4>Select months to compare:</h4>
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              flex-wrap: wrap;
+            "
+          >
+            <select id="month1Select" style="padding: 8px; border-radius: 4px">
+              <option value="2025-07" selected>July 2025</option>
+              <option value="2025-06">June 2025</option>
+              <option value="2025-05">May 2025</option>
+              <option value="2025-04">April 2025</option>
+              <option value="2025-03">March 2025</option>
+              <option value="2025-02">February 2025</option>
+            </select>
+            <span style="font-weight: bold">vs</span>
+            <select id="month2Select" style="padding: 8px; border-radius: 4px">
+              <option value="2025-06" selected>June 2025</option>
+              <option value="2025-05">May 2025</option>
+              <option value="2025-04">April 2025</option>
+              <option value="2025-03">March 2025</option>
+              <option value="2025-02">February 2025</option>
+              <option value="2025-01">January 2025</option>
+            </select>
+            <button class="btn btn-secondary" onclick="loadMonthlyComparison()">
+              📊 Compare Performance
+            </button>
+          </div>
+          <p>
+            <small
+              >💡 Tip: Data will be loaded from Google Sheets tabs named by
+              month (e.g., "june", "may")</small
+            >
+          </p>
+        </div>
+
+        <div class="controls">
+          <button class="btn" onclick="loadHistoricalData()">
+            📚 Load Historical Data
+          </button>
+          <button class="btn btn-secondary" onclick="exportComparisonToExcel()">
+            📊 Export Multi-Month Report
+          </button>
+        </div>
+      </div>
+
       <div id="status" class="status">
-        Ready to load PYT Hairstyle employee data...
+        Waiting for data from N8N workflow...
       </div>
 
       <div id="employeeReports"></div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+      let employeeData = [];
+      let shopMetrics = null;
+
+      // Function to receive data from N8N workflow
+      function receiveWorkflowData(data) {
+        try {
+          console.log("Raw data received:", data);
+          const parsed = parseN8NData(data);
+          employeeData = parsed.employees;
+          shopMetrics = parsed.shopMetrics;
+          console.log("Parsed employees:", employeeData);
+          console.log("Shop metrics:", shopMetrics);
+          renderEmployeeReports();
+          document.getElementById("lastUpdated").textContent =
+            new Date().toLocaleString();
+          showStatus(
+            `Data received successfully! Found ${employeeData.length} employees.`,
+            "success"
+          );
+        } catch (error) {
+          showStatus("Error processing data: " + error.message, "error");
+          console.error("Data processing error:", error);
+          console.error("Raw data:", data);
+        }
+      }
+
+      // Helper function to determine efficiency rating
+      function getEfficiencyRating(salaryToSales, salesShare) {
+        if (salesShare > 15 && salaryToSales < 25) return "⭐⭐⭐ Excellent";
+        if (salesShare > 10 && salaryToSales < 35) return "⭐⭐ Good";
+        if (salesShare > 5 && salaryToSales < 50) return "⭐ Fair";
+        if (salaryToSales > 0) return "⚠️ Needs Improvement";
+        return "📊 No Sales Data";
+      }
+
+      function getShopEfficiencyRating(efficiency) {
+        if (efficiency < 15) return "🌟 Excellent Efficiency";
+        if (efficiency < 20) return "✅ Very Good";
+        if (efficiency < 25) return "👍 Good";
+        if (efficiency < 30) return "⚠️ Acceptable";
+        return "🔴 Needs Optimization";
+      }
+
+      function showStatus(message, type = "status") {
+        const statusElement = document.getElementById("status");
+        statusElement.textContent = message;
+        statusElement.className = type;
+      }
+
+      // Parse data from your N8N workflow format
+      function parseN8NData(rawData) {
+        console.log("Starting to parse data:", rawData);
+        const employees = [];
+        let shopMetrics = null;
+
+        // Handle array of data items (from N8N)
+        const dataArray = Array.isArray(rawData) ? rawData : [rawData];
+        console.log("Data array length:", dataArray.length);
+
+        for (let i = 0; i < dataArray.length; i++) {
+          const item = dataArray[i];
+          console.log(`Processing item ${i}:`, item);
+
+          // Skip empty items, headers, and breakdown sections
+          if (!item || typeof item !== "object") {
+            console.log(`Skipping item ${i}: not an object`);
+            continue;
+          }
+          if (item.Employee === "Employee") {
+            console.log(`Skipping item ${i}: header row`);
+            continue; // Skip header row
+          }
+          if (item.Employee && item.Employee.includes(" - Daily Breakdown")) {
+            console.log(`Skipping item ${i}: breakdown header`);
+            continue; // Skip breakdown headers
+          }
+          if (item.Employee && item.Employee === "TOTAL_SUMMARY") {
+            console.log(`Skipping item ${i}: total summary row`);
+            continue; // Skip total summary rows
+          }
+          if (item.Employee && item.Employee === "SHOP_METRICS") {
+            console.log(`Found shop metrics: ${item.Employee}`);
+            shopMetrics = {
+              period: item.Period,
+              totalDays: parseFloat(item.WorkedDays) || 0,
+              totalHours: parseFloat(item.WorkedHours) || 0,
+              totalSales:
+                parseFloat(
+                  item.AdjustedSales?.replace("£", "").replace(",", "")
+                ) || 0,
+              totalSalaries:
+                parseFloat(
+                  item.FinalTotal?.replace("£", "").replace(",", "")
+                ) || 0,
+              shopEfficiency:
+                parseFloat(item.SalaryToSalesPct?.replace("%", "")) || 0,
+              description: item.Description || "Shop efficiency metrics",
+            };
+            continue; // Skip adding to employees array
+          }
+          if (!item.Employee || item.Employee === "") {
+            console.log(`Skipping item ${i}: no employee name`);
+            continue; // Skip daily detail rows
+          }
+
+          // Check if this is a main employee summary row
+          if (
+            item.Employee &&
+            item.Period &&
+            item.WorkedDays &&
+            !item.Employee.includes(" - ") &&
+            item.FinalTotal
+          ) {
+            console.log(`Found employee: ${item.Employee}`);
+
+            const employee = {
+              name: item.Employee,
+              period: item.Period,
+              paymentType: item.PaymentType || "HYBRID",
+              workedDays: parseFloat(item.WorkedDays) || 0,
+              workedHours: parseFloat(item.WorkedHours) || 0,
+              hourlyRate:
+                parseFloat(
+                  item.HourlyRate?.replace("£", "").replace(",", "")
+                ) || 0,
+              salesPercentage:
+                item.SalesPercentage === "Tiered" ||
+                item.SalesPercentage === "N/A"
+                  ? item.SalesPercentage
+                  : parseFloat(item.SalesPercentage?.replace("%", "")) / 100 ||
+                    0.2,
+              basePayment:
+                parseFloat(
+                  item.BasePayment?.replace("£", "").replace(",", "")
+                ) || 0,
+              totalSales:
+                parseFloat(
+                  item.TotalSales?.replace("£", "").replace(",", "")
+                ) || 0,
+              addlSales:
+                parseFloat(item.AddlSales?.replace("£", "").replace(",", "")) ||
+                0,
+              adjustedSales:
+                parseFloat(
+                  item.AdjustedSales?.replace("£", "").replace(",", "")
+                ) || 0,
+              salesCommission:
+                parseFloat(
+                  item.SalesCommission?.replace("£", "").replace(",", "")
+                ) || 0,
+              bonusPayment:
+                parseFloat(
+                  item.BonusPayment?.replace("£", "").replace(",", "")
+                ) || 0,
+              totalBeforeBonus:
+                parseFloat(
+                  item.TotalBeforeBonus?.replace("£", "").replace(",", "")
+                ) || 0,
+              finalTotal:
+                parseFloat(
+                  item.FinalTotal?.replace("£", "").replace(",", "")
+                ) || 0,
+              avgSalesPerDay:
+                parseFloat(
+                  item.AvgSalesPerDay?.replace("£", "").replace(",", "")
+                ) || 0,
+              avgSalesPerHour:
+                parseFloat(
+                  item.AvgSalesPerHour?.replace("£", "").replace(",", "")
+                ) || 0,
+              description: item.Description || "Standard configuration",
+              configVersion: item.ConfigVersion || "N/A",
+              dataIssues: item.DataIssues || "None",
+              salaryToSalesPct:
+                parseFloat(item.SalaryToSalesPct?.replace("%", "")) || 0,
+              salesShareOfShop:
+                parseFloat(item.SalesShareOfShop?.replace("%", "")) || 0,
+              salaryShareOfShop:
+                parseFloat(item.SalaryShareOfShop?.replace("%", "")) || 0,
+            };
+
+            console.log("Created employee object:", employee);
+            employees.push(employee);
+          }
+        }
+
+        // If no SHOP_METRICS found, calculate from employee data
+        if (!shopMetrics && employees.length > 0) {
+          const totalSales = employees.reduce(
+            (sum, emp) => sum + emp.adjustedSales,
+            0
+          );
+          const totalSalaries = employees.reduce(
+            (sum, emp) => sum + emp.finalTotal,
+            0
+          );
+          const totalDays = employees.reduce(
+            (sum, emp) => sum + emp.workedDays,
+            0
+          );
+          const totalHours = employees.reduce(
+            (sum, emp) => sum + emp.workedHours,
+            0
+          );
+
+          shopMetrics = {
+            period: employees[0]?.period || "2025-06",
+            totalDays: totalDays,
+            totalHours: totalHours,
+            totalSales: totalSales,
+            totalSalaries: totalSalaries,
+            shopEfficiency:
+              totalSales > 0 ? (totalSalaries / totalSales) * 100 : 0,
+            description: `Calculated from ${employees.length} employees`,
+          };
+          console.log(
+            `✅ Calculated shop metrics from employee data:`,
+            shopMetrics
+          );
+        }
+
+        console.log("Final employees array:", employees);
+        console.log("Final shop metrics:", shopMetrics);
+        return { employees, shopMetrics };
+      }
+
+      function addShopSummarySection(container) {
+        const summarySection = document.createElement("div");
+        summarySection.className = "employee-section shop-summary";
+        summarySection.innerHTML = `
+                <div class="employee-header">
+                    🏪 Shop-Wide Performance Summary - ${shopMetrics.period}
+                </div>
+                <div class="summary-section">
+                    <table class="summary-table">
+                        <tr>
+                            <th>Metric</th>
+                            <th>Total Value</th>
+                            <th>Shop Efficiency Analysis</th>
+                        </tr>
+                        <tr>
+                            <td><strong>Total Sales</strong></td>
+                            <td class="currency"><strong>£${shopMetrics.totalSales.toFixed(
+                              2
+                            )}</strong></td>
+                            <td>All sales combined across ${
+                              employeeData.length
+                            } employees</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total Payroll</strong></td>
+                            <td class="currency"><strong>£${shopMetrics.totalSalaries.toFixed(
+                              2
+                            )}</strong></td>
+                            <td>All employee payments combined</td>
+                        </tr>
+                        <tr class="totals-row">
+                            <td><strong>Shop Efficiency Ratio</strong></td>
+                            <td><strong>${shopMetrics.shopEfficiency.toFixed(
+                              2
+                            )}%</strong></td>
+                            <td><strong>Salary cost per £1 of sales - ${getShopEfficiencyRating(
+                              shopMetrics.shopEfficiency
+                            )}</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Total Hours Worked</td>
+                            <td>${shopMetrics.totalHours.toFixed(2)}</td>
+                            <td>Combined work hours across all employees</td>
+                        </tr>
+                        <tr>
+                            <td>Total Working Days</td>
+                            <td>${shopMetrics.totalDays}</td>
+                            <td>Combined working days across all employees</td>
+                        </tr>
+                        <tr>
+                            <td>Average Sales per Hour</td>
+                            <td class="currency">£${(
+                              shopMetrics.totalSales / shopMetrics.totalHours
+                            ).toFixed(2)}</td>
+                            <td>Shop productivity: sales generated per hour worked</td>
+                        </tr>
+                        <tr>
+                            <td>Profit Margin (Est.)</td>
+                            <td>${(100 - shopMetrics.shopEfficiency).toFixed(
+                              2
+                            )}%</td>
+                            <td>Estimated gross margin after salary costs</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+        container.appendChild(summarySection);
+      }
+      // Render employee reports
+      function renderEmployeeReports() {
+        const container = document.getElementById("employeeReports");
+        container.innerHTML = "";
+
+        if (employeeData.length === 0) {
+          container.innerHTML =
+            '<div class="status">No employee data available</div>';
+          return;
+        }
+
+        // Add shop metrics summary first
+        if (shopMetrics) {
+          addShopSummarySection(container);
+        }
+
+        employeeData.forEach((emp, index) => {
+          const section = document.createElement("div");
+          section.className = "employee-section";
+
+          section.innerHTML = `
+                    <div class="employee-header">
+    ${emp.name} - ${emp.period}
+    <span style="float: right; font-size: 14px;">
+        ${emp.paymentType} | Total: £${emp.finalTotal.toFixed(2)} | 
+        <span style="color: ${
+          (emp.finalTotal / emp.adjustedSales) * 100 < 30
+            ? "#4CAF50"
+            : (emp.finalTotal / emp.adjustedSales) * 100 < 50
+            ? "#FF9800"
+            : "#F44336"
+        };">
+            ${((emp.finalTotal / emp.adjustedSales) * 100).toFixed(1)}%
+        </span>
+    </span>
+</div>
+                    <div class="summary-section">
+                        <table class="summary-table">
+                            <tr>
+                                <th style="width: 25%;">Metric</th>
+                                <th style="width: 20%;">Value</th>
+                                <th style="width: 55%;">Details</th>
+                            </tr>
+                            <tr>
+                                <td><strong>Payment Structure</strong></td>
+                                <td colspan="2"></td>
+                            </tr>
+                            <tr>
+                                <td>Payment Type</td>
+                                <td>${emp.paymentType}</td>
+                                <td>${emp.description}</td>
+                            </tr>
+                            <tr>
+                                <td>Config Version</td>
+                                <td>${emp.configVersion}</td>
+                                <td>Configuration tracking</td>
+                            </tr>
+                            <tr>
+                                <td>Data Quality</td>
+                                <td>${emp.dataIssues}</td>
+                                <td>Data validation results</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Work Summary</strong></td>
+                                <td colspan="2"></td>
+                            </tr>
+                            <tr>
+                                <td>Worked Days</td>
+                                <td>${emp.workedDays}</td>
+                                <td>Total working days in period</td>
+                            </tr>
+                            <tr>
+                                <td>Worked Hours</td>
+                                <td>${emp.workedHours.toFixed(2)}</td>
+                                <td>Total hours logged</td>
+                            </tr>
+                            <tr>
+                                <td>Hourly Rate</td>
+                                <td class="currency">£${emp.hourlyRate.toFixed(
+                                  2
+                                )}</td>
+                                <td>Base hourly payment rate</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Sales & Commission</strong></td>
+                                <td colspan="2"></td>
+                            </tr>
+                            <tr>
+                                <td>Sales Commission Rate</td>
+                                <td>${
+                                  typeof emp.salesPercentage === "string"
+                                    ? emp.salesPercentage
+                                    : (emp.salesPercentage * 100).toFixed(1) +
+                                      "%"
+                                }</td>
+                                <td>Commission percentage on sales</td>
+                            </tr>
+                            <tr>
+                                <td>Total Sales</td>
+                                <td class="currency">£${emp.totalSales.toFixed(
+                                  2
+                                )}</td>
+                                <td>Regular sales amount</td>
+                            </tr>
+                            <tr>
+                                <td>Additional Sales</td>
+                                <td class="currency">£${emp.addlSales.toFixed(
+                                  2
+                                )}</td>
+                                <td>Extra sales/bonuses</td>
+                            </tr>
+                            <tr>
+                                <td>Adjusted Sales</td>
+                                <td class="currency">£${emp.adjustedSales.toFixed(
+                                  2
+                                )}</td>
+                                <td>Total + Additional sales</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Payment Calculation</strong></td>
+                                <td colspan="2"></td>
+                            </tr>
+                            <tr>
+                                <td>Base Payment</td>
+                                <td class="currency">£${emp.basePayment.toFixed(
+                                  2
+                                )}</td>
+                                <td>${emp.workedHours.toFixed(
+                                  2
+                                )} hours × £${emp.hourlyRate.toFixed(
+            2
+          )}/hour</td>
+                            </tr>
+                            <tr>
+                                <td>Sales Commission</td>
+                                <td class="currency">£${emp.salesCommission.toFixed(
+                                  2
+                                )}</td>
+                                <td>£${emp.adjustedSales.toFixed(2)} × ${
+            typeof emp.salesPercentage === "string"
+              ? emp.salesPercentage
+              : (emp.salesPercentage * 100).toFixed(1) + "%"
+          }</td>
+                            </tr>
+                            <tr>
+                                <td>Bonus Payment</td>
+                                <td class="currency">£${emp.bonusPayment.toFixed(
+                                  2
+                                )}</td>
+                                <td>Additional bonuses/guarantees</td>
+                            </tr>
+                            <tr class="totals-row">
+                                <td><strong>Final Total Payment</strong></td>
+                                <td class="currency"><strong>£${emp.finalTotal.toFixed(
+                                  2
+                                )}</strong></td>
+                                <td><strong>Base + Commission + Bonuses</strong></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Performance Metrics</strong></td>
+                                <td colspan="2"></td>
+                            </tr>
+                            <tr>
+                                <td>Average Sales per Day</td>
+                                <td class="currency">£${emp.avgSalesPerDay.toFixed(
+                                  2
+                                )}</td>
+                                <td>£${emp.adjustedSales.toFixed(2)} ÷ ${
+            emp.workedDays
+          } days</td>
+                            </tr>
+                            <tr>
+                                <td>Average Sales per Hour</td>
+                                <td class="currency">£${emp.avgSalesPerHour.toFixed(
+                                  2
+                                )}</td>
+                                <td>£${emp.adjustedSales.toFixed(
+                                  2
+                                )} ÷ ${emp.workedHours.toFixed(2)} hours</td>
+                            </tr>
+                            <tr>
+                                <td>Earnings per Day</td>
+                                <td class="currency">£${(
+                                  emp.finalTotal / emp.workedDays
+                                ).toFixed(2)}</td>
+                                <td>Total payment ÷ working days</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Business Efficiency Metrics</strong></td>
+                                <td colspan="2"></td>
+                            </tr>
+                            <tr class="efficiency-row">
+                                <td>Cost Efficiency</td>
+                                <td>${(
+                                  (emp.finalTotal / emp.adjustedSales) *
+                                  100
+                                ).toFixed(2)}%</td>
+                                <td>Salary cost per £1 of sales (lower = better)</td>
+                            </tr>
+                            <tr class="efficiency-row">
+                                <td>Sales Share of Shop</td>
+                                <td>${
+                                  shopMetrics
+                                    ? (
+                                        (emp.adjustedSales /
+                                          shopMetrics.totalSales) *
+                                        100
+                                      ).toFixed(2)
+                                    : "0.00"
+                                }%</td>
+                                <td>Contribution to total shop sales</td>
+                            </tr>
+                            <tr class="efficiency-row">
+                                <td>Salary Share of Shop</td>
+                                <td>${
+                                  shopMetrics
+                                    ? (
+                                        (emp.finalTotal /
+                                          shopMetrics.totalSalaries) *
+                                        100
+                                      ).toFixed(2)
+                                    : "0.00"
+                                }%</td>
+                                <td>Proportion of total shop payroll</td>
+                            </tr>
+                            <tr class="efficiency-row">
+                                <td>Efficiency Rating</td>
+                                <td>${getEfficiencyRating(
+                                  (emp.finalTotal / emp.adjustedSales) * 100,
+                                  shopMetrics
+                                    ? (emp.adjustedSales /
+                                        shopMetrics.totalSales) *
+                                        100
+                                    : 0
+                                )}</td>
+                                <td>Overall performance assessment</td>
+                            </tr>
+                        </table>
+                    </div>
+                `;
+
+          container.appendChild(section);
+        });
+
+        // Add individual summary section
+        if (employeeData.length > 1) {
+          addIndividualSummarySection(container);
+        }
+      }
+
+      function addIndividualSummarySection(container) {
+        const totalPayment = employeeData.reduce(
+          (sum, emp) => sum + emp.finalTotal,
+          0
+        );
+        const totalSales = employeeData.reduce(
+          (sum, emp) => sum + emp.adjustedSales,
+          0
+        );
+        const totalCommission = employeeData.reduce(
+          (sum, emp) => sum + emp.salesCommission,
+          0
+        );
+        const totalHours = employeeData.reduce(
+          (sum, emp) => sum + emp.workedHours,
+          0
+        );
+
+        const summarySection = document.createElement("div");
+        summarySection.className = "employee-section";
+        summarySection.innerHTML = `
+                <div class="employee-header">
+                    📊 Individual Employee Summary - ${
+                      employeeData.length
+                    } Employees
+                </div>
+                <div class="summary-section">
+                    <table class="summary-table">
+                        <tr>
+                            <th>Metric</th>
+                            <th>Total</th>
+                            <th>Average per Employee</th>
+                        </tr>
+                        <tr>
+                            <td>Total Hours Worked</td>
+                            <td>${totalHours.toFixed(2)}</td>
+                            <td>${(totalHours / employeeData.length).toFixed(
+                              2
+                            )}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Sales</td>
+                            <td class="currency">£${totalSales.toFixed(2)}</td>
+                            <td class="currency">£${(
+                              totalSales / employeeData.length
+                            ).toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Commission</td>
+                            <td class="currency">£${totalCommission.toFixed(
+                              2
+                            )}</td>
+                            <td class="currency">£${(
+                              totalCommission / employeeData.length
+                            ).toFixed(2)}</td>
+                        </tr>
+                        <tr class="totals-row">
+                            <td><strong>Total Payments</strong></td>
+                            <td class="currency"><strong>£${totalPayment.toFixed(
+                              2
+                            )}</strong></td>
+                            <td class="currency"><strong>£${(
+                              totalPayment / employeeData.length
+                            ).toFixed(2)}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+        container.appendChild(summarySection);
+      }
+      // FIXED: Fetch data from Google Sheets with proper sheet name support
+      async function fetchFromGoogleSheets() {
+        const sheetTab = document.getElementById("sheetTab").value || "july";
+        const sheetId = "1VlQ9JRTSCdtIyxbh-AffUawdAIEgZw33W_poq1X6R5s";
+
+        showStatus(
+          `Fetching data from Google Sheets (${sheetTab} tab)...`,
+          "status"
+        );
+
+        // Try multiple URL formats with sheet name - this should work for different tabs
+        const urlsToTry = [
+          `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(
+            sheetTab
+          )}`,
+          `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&sheet=${encodeURIComponent(
+            sheetTab
+          )}`,
+          `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`, // fallback to default sheet
+          `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=0`,
+        ];
+
+        for (let i = 0; i < urlsToTry.length; i++) {
+          const csvUrl = urlsToTry[i];
+          console.log(`Trying URL ${i + 1}:`, csvUrl);
+
+          try {
+            const response = await fetch(csvUrl, {
+              method: "GET",
+              mode: "cors",
+            });
+
+            console.log(`Response ${i + 1} status:`, response.status);
+
+            if (response.ok) {
+              const csvText = await response.text();
+              console.log(
+                `Success with URL ${i + 1}! First 500 chars:`,
+                csvText.substring(0, 500)
+              );
+
+              // Check if this looks like our data
+              if (
+                csvText.length > 50 &&
+                (csvText.includes("employee") ||
+                  csvText.includes("Employee") ||
+                  csvText.includes(","))
+              ) {
+                const parsedData = parseCSVToEmployeeData(csvText);
+                console.log("Parsed employee data:", parsedData);
+
+                if (parsedData.length > 0) {
+                  const mockData = parsedData.map((emp) => ({
+                    Employee: emp.name,
+                    Period: emp.period,
+                    PaymentType: emp.paymentType,
+                    WorkedDays: emp.workedDays.toString(),
+                    WorkedHours: emp.workedHours.toFixed(2),
+                    HourlyRate: `£${emp.hourlyRate.toFixed(2)}`,
+                    SalesPercentage: emp.salesPercentage,
+                    BasePayment: `£${emp.basePayment.toFixed(2)}`,
+                    TotalSales: `£${emp.totalSales.toFixed(2)}`,
+                    AddlSales: `£${emp.addlSales.toFixed(2)}`,
+                    AdjustedSales: `£${emp.adjustedSales.toFixed(2)}`,
+                    SalesCommission: `£${emp.salesCommission.toFixed(2)}`,
+                    BonusPayment: `£${emp.bonusPayment.toFixed(2)}`,
+                    FinalTotal: `£${emp.finalTotal.toFixed(2)}`,
+                    AvgSalesPerDay: `£${emp.avgSalesPerDay.toFixed(2)}`,
+                    AvgSalesPerHour: `£${emp.avgSalesPerHour.toFixed(2)}`,
+                    Description: emp.description,
+                    ConfigVersion: emp.configVersion,
+                    DataIssues: emp.dataIssues,
+                    SalaryToSalesPct: `${emp.salaryToSalesPct.toFixed(2)}%`,
+                    SalesShareOfShop: `${emp.salesShareOfShop.toFixed(2)}%`,
+                    SalaryShareOfShop: `${emp.salaryShareOfShop.toFixed(2)}%`,
+                  }));
+
+                  receiveWorkflowData(mockData);
+                  return;
+                } else {
+                  console.log(
+                    "No valid employee data found, trying next URL..."
+                  );
+                }
+              } else {
+                console.log(
+                  "Response doesn't look like CSV data, trying next URL..."
+                );
+              }
+            }
+          } catch (error) {
+            console.log(`URL ${i + 1} failed:`, error.message);
+          }
+        }
+
+        // If all URLs failed
+        showStatus(
+          `Unable to fetch data for "${sheetTab}" tab. Please check: 1) Sheet is shared publicly (Anyone with link can view), 2) Tab "${sheetTab}" exists, 3) Tab contains data`,
+          "error"
+        );
+      }
+
+      // NEW: Compare two sheets function
+      async function fetchAndCompareSheets() {
+        const sheet1 = document.getElementById("sheetTab").value || "june";
+        const sheet2 = document.getElementById("compareSheet").value;
+
+        if (!sheet2) {
+          alert("Please enter a second sheet name to compare with");
+          return;
+        }
+
+        if (sheet1 === sheet2) {
+          alert("Please enter different sheet names to compare");
+          return;
+        }
+
+        showStatus(
+          `Loading ${sheet1} and ${sheet2} for comparison...`,
+          "status"
+        );
+
+        try {
+          // Load first sheet
+          document.getElementById("sheetTab").value = sheet1;
+          await fetchFromGoogleSheets();
+          const data1 = {
+            employees: JSON.parse(JSON.stringify(employeeData)),
+            shopMetrics: shopMetrics
+              ? JSON.parse(JSON.stringify(shopMetrics))
+              : null,
+          };
+
+          // Load second sheet
+          document.getElementById("sheetTab").value = sheet2;
+          await fetchFromGoogleSheets();
+          const data2 = {
+            employees: JSON.parse(JSON.stringify(employeeData)),
+            shopMetrics: shopMetrics
+              ? JSON.parse(JSON.stringify(shopMetrics))
+              : null,
+          };
+
+          // Render comparison
+          renderSheetComparison(data1, data2, sheet1, sheet2);
+
+          // Restore original sheet name
+          document.getElementById("sheetTab").value = sheet1;
+        } catch (error) {
+          showStatus("Error comparing sheets: " + error.message, "error");
+        }
+      }
+
+      // NEW: Render sheet comparison
+      function renderSheetComparison(data1, data2, sheet1, sheet2) {
+        const container = document.getElementById("employeeReports");
+
+        let html = `
+        <div class="comparison-view">
+            <h2>📊 Sheet Comparison: ${sheet1.toUpperCase()} vs ${sheet2.toUpperCase()}</h2>
+            
+            <div class="comparison-section">
+                <div class="comparison-header">🏪 Shop Performance Comparison</div>
+                <div style="padding: 15px;">
+                    <table class="comparison-table">
+                        <tr>
+                            <th>Metric</th>
+                            <th>${sheet1.toUpperCase()}</th>
+                            <th>${sheet2.toUpperCase()}</th>
+                            <th>Difference</th>
+                            <th>Change %</th>
+                        </tr>
+        `;
+
+        // Shop metrics comparison
+        if (data1.shopMetrics && data2.shopMetrics) {
+          const metrics = [
+            {
+              key: "totalSales",
+              label: "Total Sales",
+              format: (v) => `£${v.toLocaleString()}`,
+            },
+            {
+              key: "totalSalaries",
+              label: "Total Payroll",
+              format: (v) => `£${v.toLocaleString()}`,
+            },
+            {
+              key: "shopEfficiency",
+              label: "Shop Efficiency",
+              format: (v) => `${v.toFixed(2)}%`,
+            },
+          ];
+
+          metrics.forEach((metric) => {
+            const val1 = data1.shopMetrics[metric.key] || 0;
+            const val2 = data2.shopMetrics[metric.key] || 0;
+            const diff = val1 - val2;
+            const changePercent = val2 !== 0 ? (diff / val2) * 100 : 0;
+
+            html += `
+              <tr>
+                <td><strong>${metric.label}</strong></td>
+                <td>${metric.format(val1)}</td>
+                <td>${metric.format(val2)}</td>
+                <td>${diff > 0 ? "+" : ""}${metric.format(Math.abs(diff))}</td>
+                <td>${changePercent > 0 ? "+" : ""}${changePercent.toFixed(
+              1
+            )}%</td>
+              </tr>
+            `;
+          });
+        }
+
+        html += `
+                    </table>
+                </div>
+            </div>
+            
+            <h3>👥 Employee Performance Comparison</h3>
+        `;
+
+        // Get all unique employees
+        const allEmployees = new Set();
+        data1.employees?.forEach((emp) => allEmployees.add(emp.name));
+        data2.employees?.forEach((emp) => allEmployees.add(emp.name));
+
+        // Employee comparisons
+        Array.from(allEmployees)
+          .sort()
+          .forEach((employeeName) => {
+            const emp1 = data1.employees?.find((e) => e.name === employeeName);
+            const emp2 = data2.employees?.find((e) => e.name === employeeName);
+
+            html += `
+            <div class="comparison-section">
+                <div class="comparison-header">
+                    ${employeeName} - Performance Comparison
+                </div>
+                <div style="padding: 15px;">
+                    <table class="comparison-table">
+                        <tr>
+                            <th>Metric</th>
+                            <th>${sheet1.toUpperCase()}</th>
+                            <th>${sheet2.toUpperCase()}</th>
+                            <th>Difference</th>
+                            <th>Change %</th>
+                        </tr>
+          `;
+
+            const comparisonMetrics = [
+              {
+                key: "adjustedSales",
+                label: "Sales",
+                format: (v) => `£${v.toLocaleString()}`,
+              },
+              {
+                key: "finalTotal",
+                label: "Salary",
+                format: (v) => `£${v.toLocaleString()}`,
+              },
+              {
+                key: "workedHours",
+                label: "Hours Worked",
+                format: (v) => v.toFixed(1),
+              },
+              {
+                key: "avgSalesPerDay",
+                label: "Avg Sales/Day",
+                format: (v) => `£${v.toFixed(0)}`,
+              },
+            ];
+
+            comparisonMetrics.forEach((metric) => {
+              const val1 = emp1?.[metric.key];
+              const val2 = emp2?.[metric.key];
+
+              if (val1 !== undefined && val2 !== undefined) {
+                const diff = val1 - val2;
+                const changePercent = val2 !== 0 ? (diff / val2) * 100 : 0;
+
+                html += `
+                <tr>
+                  <td>${metric.label}</td>
+                  <td>${metric.format(val1)}</td>
+                  <td>${metric.format(val2)}</td>
+                  <td>${diff > 0 ? "+" : ""}${metric.format(
+                  Math.abs(diff)
+                )}</td>
+                  <td>${changePercent > 0 ? "+" : ""}${changePercent.toFixed(
+                  1
+                )}%</td>
+                </tr>
+              `;
+              } else {
+                html += `
+                <tr>
+                  <td>${metric.label}</td>
+                  <td>${val1 ? metric.format(val1) : "N/A"}</td>
+                  <td>${val2 ? metric.format(val2) : "N/A"}</td>
+                  <td>N/A</td>
+                  <td>N/A</td>
+                </tr>
+              `;
+              }
+            });
+
+            html += `
+                    </table>
+                </div>
+            </div>
+          `;
+          });
+
+        html += "</div>";
+        container.innerHTML = html;
+        showStatus(`Comparison completed: ${sheet1} vs ${sheet2}`, "success");
+      }
+
+      // Parse CSV data to employee format
+      function parseCSVToEmployeeData(csvText) {
+        const lines = csvText.split("\n");
+        const employees = [];
+
+        // List of expected employees for verification (UPDATED TO MATCH NAME MAPPER)
+        const expectedEmployees = [
+          "Aiyla",
+          "Codruta",
+          "Eiman",
+          "Eshaal",
+          "Faiza",
+          "Fatima",
+          "Alina",
+          "Jouman",
+          "Jude",
+          "Karena",
+          "Katelyn",
+          "Katie",
+          "Adam",
+          "Rimsha",
+          "Misha",
+          "Temitope",
+          "Tuba",
+          "Zoya",
+          // New July employees
+          "Thalia",
+        ];
+
+        console.log("CSV lines:", lines.length);
+        console.log("Looking for employee summary rows...");
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          const columns = line
+            .split(",")
+            .map((col) => col.replace(/"/g, "").trim());
+
+          // DEBUG: Log every row to see what's happening
+          if (i <= 5) {
+            // Only log first 6 rows
+            console.log(
+              `🔍 Row ${i}: "${columns[0]}" | Length: ${
+                columns.length
+              } | Full: [${columns.slice(0, 3).join(", ")}...]`
+            );
+          }
+          // Skip header rows and empty rows
+          if (
+            i <= 0 ||
+            columns[0] === "employee" ||
+            columns[0] === "" ||
+            columns[0] === "Employee"
+          ) {
+            if (i <= 5)
+              console.log(
+                `⏭️ SKIPPED Row ${i}: "${columns[0]}" (header/empty)`
+              );
+            continue;
+          }
+
+          // DEBUG: Check if this looks like Aiyla specifically
+          if (columns[0] === "Aiyla") {
+            console.log(
+              `🎯 FOUND Aiyla in Row ${i}! Columns: ${columns.length}`
+            );
+            console.log(
+              `   Expected employees includes Aiyla: ${expectedEmployees.includes(
+                "Aiyla"
+              )}`
+            );
+            console.log(
+              `   All conditions: ${
+                columns[0] &&
+                !columns[0].includes("Daily Breakdown") &&
+                !columns[0].includes(" - ") &&
+                !columns[0].includes("#######") &&
+                columns[0].length > 0 &&
+                expectedEmployees.includes(columns[0])
+              }`
+            );
+          }
+
+          // Check if this looks like an employee name (not a breakdown or daily entry)
+          if (
+            columns[0] &&
+            !columns[0].includes("Daily Breakdown") &&
+            !columns[0].includes(" - ") &&
+            !columns[0].includes("#######") &&
+            columns[0].length > 0 &&
+            expectedEmployees.includes(columns[0])
+          ) {
+            console.log(
+              `Found employee: ${columns[0]} - ${columns.length} columns`
+            );
+
+            if (columns.length >= 8) {
+              const employee = {
+                name: columns[0],
+                period: columns[1] || "2025-07",
+                paymentType: columns[2] || "HYBRID",
+                workedDays: parseFloat(columns[3]) || 0,
+                workedHours: parseFloat(columns[4]) || 0,
+                hourlyRate: parseFloat(columns[5]?.replace(/[£,"]/g, "")) || 0,
+                salesPercentage: columns[6] || "20%",
+                basePayment: parseFloat(columns[7]?.replace(/[£,"]/g, "")) || 0,
+                totalSales: parseFloat(columns[8]?.replace(/[£,"]/g, "")) || 0,
+                addlSales: parseFloat(columns[9]?.replace(/[£,"]/g, "")) || 0,
+                adjustedSales:
+                  parseFloat(columns[10]?.replace(/[£,"]/g, "")) || 0,
+                salesCommission:
+                  parseFloat(columns[11]?.replace(/[£,"]/g, "")) || 0,
+                bonusPayment:
+                  parseFloat(columns[12]?.replace(/[£,"]/g, "")) || 0,
+                finalTotal: parseFloat(columns[13]?.replace(/[£,"]/g, "")) || 0,
+                avgSalesPerDay:
+                  parseFloat(columns[14]?.replace(/[£,"]/g, "")) || 0,
+                avgSalesPerHour:
+                  parseFloat(columns[15]?.replace(/[£,"]/g, "")) || 0,
+                description: columns[16] || "Standard configuration",
+                configVersion: columns[17] || "2025-v1",
+                dataIssues: columns[18] || "None",
+                salaryToSalesPct:
+                  parseFloat(columns[19]?.replace(/[%,"]/g, "")) || 0,
+                salesShareOfShop:
+                  parseFloat(columns[20]?.replace(/[%,"]/g, "")) || 0,
+                salaryShareOfShop:
+                  parseFloat(columns[21]?.replace(/[%,"]/g, "")) || 0,
+              };
+
+              employees.push(employee);
+              console.log(`✅ ADDED: ${employee.name}`);
+            }
+          }
+        }
+
+        console.log(`📊 SUMMARY: Added ${employees.length} employees`);
+        return employees;
+      }
+      function loadTestData() {
+        // Updated test data with all business efficiency metrics
+        const testData = [
+          {
+            Employee: "Employee",
+            Period: "Period",
+            PaymentType: "Payment Type",
+            WorkedDays: "Worked Days",
+            WorkedHours: "Worked Hours",
+            HourlyRate: "Hourly Rate",
+            SalesPercentage: "Sales %",
+            BasePayment: "Base Payment",
+            TotalSales: "Total Sales",
+            AddlSales: "Addl Sales",
+            AdjustedSales: "Adjusted Sales",
+            SalesCommission: "Sales Commission",
+            BonusPayment: "Bonus Payment",
+            FinalTotal: "Final Total Payment",
+            AvgSalesPerDay: "Avg Sales/Day",
+            AvgSalesPerHour: "Avg Sales/Hour",
+            Description: "Pay Structure Description",
+            ConfigVersion: "Config Version",
+            DataIssues: "Data Issues",
+            SalaryToSalesPct: "Salary vs Own Sales %",
+            SalesShareOfShop: "Sales Share of Shop %",
+            SalaryShareOfShop: "Salary Share of Shop %",
+          },
+          {
+            Employee: "Aisha",
+            Period: "2025-07",
+            PaymentType: "HOURLY ONLY",
+            WorkedDays: "14",
+            WorkedHours: "79.82",
+            HourlyRate: "£12.21",
+            SalesPercentage: "N/A",
+            BasePayment: "£974.62",
+            TotalSales: "£2234.98",
+            AddlSales: "£135.00",
+            AdjustedSales: "£2369.98",
+            SalesCommission: "£0.00",
+            BonusPayment: "£0.00",
+            FinalTotal: "£974.62",
+            AvgSalesPerDay: "£169.28",
+            AvgSalesPerHour: "£29.69",
+            Description: "£12.21 per hour, no commission",
+            ConfigVersion: "2025-v1",
+            DataIssues: "None",
+            SalaryToSalesPct: "41.13%",
+            SalesShareOfShop: "7.58%",
+            SalaryShareOfShop: "11.37%",
+          },
+          {
+            Employee: "Isaac",
+            Period: "2025-07",
+            PaymentType: "COMMISSION ONLY",
+            WorkedDays: "8",
+            WorkedHours: "41.83",
+            HourlyRate: "£0.00",
+            SalesPercentage: "25.0%",
+            BasePayment: "£0.00",
+            TotalSales: "£6225.04",
+            AddlSales: "£4787.98",
+            AdjustedSales: "£11013.02",
+            SalesCommission: "£2753.26",
+            BonusPayment: "£0.00",
+            FinalTotal: "£2753.26",
+            AvgSalesPerDay: "£1376.63",
+            AvgSalesPerHour: "£263.28",
+            Description: "25% of sales only, no hourly rate",
+            ConfigVersion: "2025-v1",
+            DataIssues: "None",
+            SalaryToSalesPct: "25.00%",
+            SalesShareOfShop: "35.24%",
+            SalaryShareOfShop: "32.15%",
+          },
+          {
+            Employee: "Alex",
+            Period: "2025-07",
+            PaymentType: "TIERED COMMISSION",
+            WorkedDays: "25",
+            WorkedHours: "195.68",
+            HourlyRate: "£0.00",
+            SalesPercentage: "Tiered",
+            BasePayment: "£0.00",
+            TotalSales: "£16897.99",
+            AddlSales: "£-720.02",
+            AdjustedSales: "£16177.97",
+            SalesCommission: "£4168.05",
+            BonusPayment: "£0.00",
+            FinalTotal: "£4168.05",
+            AvgSalesPerDay: "£647.12",
+            AvgSalesPerHour: "£82.68",
+            Description:
+              "25% up to £10,000 total sales, then 27%, no hourly rate",
+            ConfigVersion: "2025-v1",
+            DataIssues: "None",
+            SalaryToSalesPct: "25.76%",
+            SalesShareOfShop: "51.78%",
+            SalaryShareOfShop: "48.65%",
+          },
+          {
+            Employee: "Codruta",
+            Period: "2025-07",
+            PaymentType: "COMMISSION ONLY",
+            WorkedDays: "6",
+            WorkedHours: "43.35",
+            HourlyRate: "£0.00",
+            SalesPercentage: "27.0%",
+            BasePayment: "£0.00",
+            TotalSales: "£3632.00",
+            AddlSales: "£540.00",
+            AdjustedSales: "£4172.00",
+            SalesCommission: "£1126.44",
+            BonusPayment: "£0.00",
+            FinalTotal: "£1126.44",
+            AvgSalesPerDay: "£695.33",
+            AvgSalesPerHour: "£96.26",
+            Description: "27% of sales only, no hourly rate",
+            ConfigVersion: "2025-v1",
+            DataIssues: "None",
+            SalaryToSalesPct: "27.00%",
+            SalesShareOfShop: "13.35%",
+            SalaryShareOfShop: "13.15%",
+          },
+          {
+            Employee: "SHOP_METRICS",
+            Period: "2025-07",
+            PaymentType: "ALL_TYPES",
+            WorkedDays: "318",
+            WorkedHours: "1587.45",
+            HourlyRate: "",
+            SalesPercentage: "",
+            BasePayment: "",
+            TotalSales: "",
+            AddlSales: "",
+            AdjustedSales: "£31245.87",
+            SalesCommission: "",
+            BonusPayment: "",
+            FinalTotal: "£8567.42",
+            AvgSalesPerDay: "",
+            AvgSalesPerHour: "",
+            Description: "Shop efficiency: 27.42% salary cost of total sales",
+            ConfigVersion: "2025-v1",
+            DataIssues: "None",
+            SalaryToSalesPct: "27.42%",
+            SalesShareOfShop: "100.00%",
+            SalaryShareOfShop: "100.00%",
+          },
+        ];
+
+        receiveWorkflowData(testData);
+      }
+
+      function clearData() {
+        employeeData = [];
+        shopMetrics = null;
+        document.getElementById("employeeReports").innerHTML = "";
+        document.getElementById("status").className = "status";
+        document.getElementById("status").textContent =
+          "Data cleared. Waiting for new data...";
+        document.getElementById("lastUpdated").textContent = "Not yet loaded";
+      }
+
+      function exportToExcel() {
+        if (employeeData.length === 0) {
+          alert("No data to export");
+          return;
+        }
+
+        const wb = XLSX.utils.book_new();
+
+        // Create summary sheet with business metrics
+        const summaryData = [
+          ["Employee Payment Report - Generated from N8N Workflow"],
+          ["Generated:", new Date().toLocaleString()],
+          [""],
+          [
+            "Employee",
+            "Period",
+            "Payment Type",
+            "Worked Days",
+            "Worked Hours",
+            "Hourly Rate",
+            "Sales %",
+            "Base Payment",
+            "Total Sales",
+            "Addl Sales",
+            "Adjusted Sales",
+            "Sales Commission",
+            "Bonus Payment",
+            "Final Total",
+            "Avg Sales/Day",
+            "Avg Sales/Hour",
+            "Cost Efficiency %",
+            "Sales Share %",
+            "Salary Share %",
+            "Efficiency Rating",
+          ],
+        ];
+
+        employeeData.forEach((emp) => {
+          summaryData.push([
+            emp.name,
+            emp.period,
+            emp.paymentType,
+            emp.workedDays,
+            emp.workedHours.toFixed(2),
+            emp.hourlyRate.toFixed(2),
+            typeof emp.salesPercentage === "string"
+              ? emp.salesPercentage
+              : (emp.salesPercentage * 100).toFixed(1) + "%",
+            emp.basePayment.toFixed(2),
+            emp.totalSales.toFixed(2),
+            emp.addlSales.toFixed(2),
+            emp.adjustedSales.toFixed(2),
+            emp.salesCommission.toFixed(2),
+            emp.bonusPayment.toFixed(2),
+            emp.finalTotal.toFixed(2),
+            emp.avgSalesPerDay.toFixed(2),
+            emp.avgSalesPerHour.toFixed(2),
+            emp.salaryToSalesPct.toFixed(2) + "%",
+            emp.salesShareOfShop.toFixed(2) + "%",
+            emp.salaryShareOfShop.toFixed(2) + "%",
+            getEfficiencyRating(emp.salaryToSalesPct, emp.salesShareOfShop),
+          ]);
+        });
+
+        // Add shop metrics summary
+        if (shopMetrics) {
+          summaryData.push([]);
+          summaryData.push(["SHOP SUMMARY"]);
+          summaryData.push([
+            "Total Sales",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            shopMetrics.totalSales.toFixed(2),
+          ]);
+          summaryData.push([
+            "Total Payroll",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            shopMetrics.totalSalaries.toFixed(2),
+          ]);
+          summaryData.push([
+            "Shop Efficiency",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            shopMetrics.shopEfficiency.toFixed(2) + "%",
+          ]);
+        }
+
+        const ws = XLSX.utils.aoa_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(wb, ws, "Payment Summary");
+
+        const filename = `Employee_Payments_${new Date()
+          .toISOString()
+          .slice(0, 10)}.xlsx`;
+        XLSX.writeFile(wb, filename);
+      }
+
+      // Check for URL parameters (for simple integration)
+      window.addEventListener("load", function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        const dataParam = urlParams.get("data");
+
+        if (dataParam) {
+          try {
+            const data = JSON.parse(decodeURIComponent(dataParam));
+            receiveWorkflowData(data);
+          } catch (error) {
+            showStatus("Error parsing URL data: " + error.message, "error");
+          }
+        }
+      });
+
+      // For basic multi-month functionality
+      let monthlyDataStore = {};
+
+      function initializeMonthlyTabs() {
+        const tabs = document.querySelectorAll(".month-tab");
+        const comparisonControls =
+          document.getElementById("comparisonControls");
+
+        tabs.forEach((tab) => {
+          tab.addEventListener("click", function () {
+            tabs.forEach((t) => t.classList.remove("active"));
+            this.classList.add("active");
+
+            if (this.dataset.mode === "comparison") {
+              comparisonControls.style.display = "block";
+            } else {
+              comparisonControls.style.display = "none";
+              if (employeeData.length > 0) {
+                renderEmployeeReports();
+              }
+            }
+          });
+        });
+      }
+
+      function loadMonthlyComparison() {
+        alert(
+          "Multi-month comparison feature coming soon! For now, use the 'Compare Two Sheets' button above."
+        );
+      }
+
+      function loadHistoricalData() {
+        alert(
+          "Historical data loading feature coming soon! For now, load individual months using the sheet tab field."
+        );
+      }
+
+      function exportComparisonToExcel() {
+        alert(
+          "Multi-month Excel export coming soon! For now, use the regular 'Export to Excel' button."
+        );
+      }
+
+      // For webhook integration (if hosting with backend)
+      if (typeof window.receiveWebhookData === "undefined") {
+        window.receiveWebhookData = receiveWorkflowData;
+      }
+
+      // Initialize when page loads
+      document.addEventListener("DOMContentLoaded", function () {
+        initializeMonthlyTabs();
+      });
+    </script>
   </body>
 </html>
