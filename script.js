@@ -5,24 +5,24 @@ let shopMetrics = null;
 
 // PYT-specific expected employees (from your N8N workflow)
 const PYT_EMPLOYEES = [
-  "Aiyla Akhtar",
-  "Codruta Nicorescu",
+  "Aiyla",
+  "Codruta",
   "Eiman",
-  "Eshaal Awan",
-  "Faiza Zulficar",
-  "Fatima Zulficar",
-  "Hasseb Alina",
+  "Eshaal",
+  "Faiza",
+  "Fatima",
+  "Alina",
   "Jouman",
-  "Jude Elsidiq",
+  "Jude",
   "Karena",
-  "Katelyn Harnett",
+  "Katelyn",
   "Katie",
-  "Lee Adam",
-  "Makeel Rimsha",
+  "Adam",
+  "Rimsha",
   "Misha",
   "Temitope",
-  "Tuba Raja",
-  "Zoya Julani",
+  "Tuba",
+  "Zoya",
 ];
 
 // Function to receive data from N8N workflow
