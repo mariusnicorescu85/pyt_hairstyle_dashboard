@@ -616,13 +616,7 @@ function renderEmployeeReports() {
         <span class="format-indicator">${formatIndicator}</span>
         <span style="float: right; font-size: 14px;">
           ${emp.paymentType} | Total: £${emp.finalTotal.toFixed(2)} | 
-          <span style="color: ${
-            (emp.finalTotal / emp.adjustedSales) * 100 < 30
-              ? "#4CAF50"
-              : (emp.finalTotal / emp.adjustedSales) * 100 < 50
-              ? "#FF9800"
-              : "#F44336"
-          };">
+          <span style="color: #000;">
             ${((emp.finalTotal / emp.adjustedSales) * 100).toFixed(1)}%
           </span>
         </span>
