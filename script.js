@@ -613,7 +613,6 @@ function renderEmployeeReports() {
     section.innerHTML = `
       <div class="employee-header">
         ${emp.name} - ${emp.period}
-        <span class="format-indicator">${formatIndicator}</span>
         <span style="float: right; font-size: 14px;">
           ${emp.paymentType} | Total: £${emp.finalTotal.toFixed(2)} | 
           <span style="color: #000;">
